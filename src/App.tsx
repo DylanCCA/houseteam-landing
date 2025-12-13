@@ -30,7 +30,7 @@ const teamMembers = [
     badges: ["Top Producing Agent", "Legacy Partner"],
     phone: "(606) 224-3261",
     email: "thouse@century21advantage.com",
-    image: "https://ui-avatars.com/api/?name=Tabitha+House&size=400&background=1e40af&color=fff&bold=true",
+    image: "/images/team-profile.jpg",
     education: [
       "Bachelor of Arts in Human Services and Counseling",
       "Master's Degree in Education",
@@ -45,7 +45,7 @@ const teamMembers = [
     badges: ["License #290390"],
     phone: "(606) 231-8571",
     email: "thouse@century21advantage.com",
-    image: "https://ui-avatars.com/api/?name=Dustin+House&size=400&background=1e3a8a&color=fff&bold=true",
+    image: "/images/team-profile.jpg",
     serviceAreas: [
       "London, KY", "Corbin, KY", "East Bernstadt, KY", "Keavy, KY",
       "Marydell, KY", "Sasser, KY", "Strunk, KY", "Symbol, KY",
@@ -71,7 +71,7 @@ const properties = [
     features: ["6 Acres", "Ranch Style", "Mineral Rights", "Peaceful Setting", "Country Living"],
     status: "Active",
     agent: "The House Team",
-    image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&h=400&fit=crop"
+    image: "/images/property1.jpg"
   },
   {
     id: 2,
@@ -88,7 +88,7 @@ const properties = [
     features: ["3 Bedrooms", "2 Full Baths", "Move-In Ready", "Great Location", "Updated"],
     status: "Active",
     agent: "The House Team",
-    image: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=600&h=400&fit=crop"
+    image: "/images/property2.jpg"
   },
   {
     id: 3,
@@ -105,7 +105,7 @@ const properties = [
     features: ["3 Bedrooms", "1 Full Bath", "Rural Setting", "Investment Opportunity", "Large Yard"],
     status: "Active",
     agent: "Tabitha House",
-    image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&h=400&fit=crop"
+    image: "/images/property3.jpg"
   },
   {
     id: 4,
@@ -122,7 +122,7 @@ const properties = [
     features: ["2 Bedrooms", "1 Full Bath", "Affordable", "Country Living", "Starter Home"],
     status: "Active",
     agent: "Dustin House",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&h=400&fit=crop"
+    image: "/images/property4.jpg"
   },
   {
     id: 5,
@@ -139,7 +139,7 @@ const properties = [
     features: ["4 Bedrooms", "2 Full Baths", "Family Friendly", "Spacious", "Great Schools"],
     status: "Active",
     agent: "Tabitha House",
-    image: "https://images.unsplash.com/photo-1628624747186-a941c476b7ef?w=600&h=400&fit=crop"
+    image: "/images/property5.jpg"
   },
   {
     id: 6,
@@ -154,7 +154,7 @@ const properties = [
     features: ["1.5 Acres", "Utilities Available", "Build Your Dream Home", "Great Location", "Paved Road"],
     status: "Active",
     agent: "The House Team",
-    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600&h=400&fit=crop"
+    image: "/images/property6.jpg"
   }
 ]
 
@@ -265,10 +265,10 @@ function App() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { src: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop", alt: "London, Kentucky Real Estate" },
-              { src: "https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=400&h=300&fit=crop", alt: "Century 21 Advantage Realty" },
-              { src: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=300&fit=crop", alt: "Homes in Laurel County" },
-              { src: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&h=300&fit=crop", alt: "Kentucky Properties" }
+              { src: "/images/property1.jpg", alt: "London, Kentucky Real Estate" },
+              { src: "/images/property2.jpg", alt: "Century 21 Advantage Realty" },
+              { src: "/images/property3.jpg", alt: "Homes in Laurel County" },
+              { src: "/images/property4.jpg", alt: "Kentucky Properties" }
             ].map((img, i) => (
               <div key={i} className="relative group overflow-hidden rounded-lg shadow-lg">
                 <img src={img.src} alt={img.alt} className="w-full h-48 object-cover group-hover:scale-105 transition duration-300" />
