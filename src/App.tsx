@@ -208,6 +208,7 @@ function App() {
               <a href="#services" className="text-gray-700 hover:text-blue-600 transition">Services</a>
               <a href="#listings" className="text-gray-700 hover:text-blue-600 transition">Listings</a>
               <a href="#contact" className="text-gray-700 hover:text-blue-600 transition">Contact</a>
+              <a href="/soq" className="text-yellow-600 hover:text-yellow-700 transition font-semibold">SOQ</a>
             </nav>
             <div className="hidden md:flex items-center space-x-4">
               <a href="tel:606-224-3261" className="flex items-center text-gray-700 hover:text-blue-600">
@@ -227,6 +228,7 @@ function App() {
                 <a href="#services" className="text-gray-700 hover:text-blue-600">Services</a>
                 <a href="#listings" className="text-gray-700 hover:text-blue-600">Listings</a>
                 <a href="#contact" className="text-gray-700 hover:text-blue-600">Contact</a>
+                <a href="/soq" className="text-yellow-600 hover:text-yellow-700 font-semibold">SOQ</a>
                 <Button className="bg-blue-600 hover:bg-blue-700 w-full">Get Started</Button>
               </nav>
             </div>
