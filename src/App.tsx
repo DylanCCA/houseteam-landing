@@ -30,7 +30,7 @@ const teamMembers = [
     badges: ["Top Producing Agent", "Legacy Partner"],
     phone: "(606) 224-3261",
     email: "thouse@century21advantage.com",
-    image: "/images/team-profile.jpg",
+    image: "/images/tabitha-cropped.jpg",
     education: [
       "Bachelor of Arts in Human Services and Counseling",
       "Master's Degree in Education",
@@ -45,7 +45,7 @@ const teamMembers = [
     badges: ["License #290390"],
     phone: "(606) 231-8571",
     email: "thouse@century21advantage.com",
-    image: "/images/team-profile.jpg",
+    image: "/images/dustin-cropped.jpg",
     serviceAreas: [
       "London, KY", "Corbin, KY", "East Bernstadt, KY", "Keavy, KY",
       "Marydell, KY", "Sasser, KY", "Strunk, KY", "Symbol, KY",
@@ -265,10 +265,10 @@ function App() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { src: "/images/property1.jpg", alt: "London, Kentucky Real Estate" },
-              { src: "/images/property2.jpg", alt: "Century 21 Advantage Realty" },
-              { src: "/images/property3.jpg", alt: "Homes in Laurel County" },
-              { src: "/images/property4.jpg", alt: "Kentucky Properties" }
+              { src: "/images/gallery1.jpg", alt: "London, Kentucky Real Estate" },
+              { src: "/images/gallery2.jpg", alt: "Century 21 Advantage Realty" },
+              { src: "/images/gallery3.jpg", alt: "Homes in Laurel County" },
+              { src: "/images/gallery4.jpg", alt: "Kentucky Properties" }
             ].map((img, i) => (
               <div key={i} className="relative group overflow-hidden rounded-lg shadow-lg">
                 <img src={img.src} alt={img.alt} className="w-full h-48 object-cover group-hover:scale-105 transition duration-300" />
