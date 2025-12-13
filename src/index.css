@@ -49,6 +49,148 @@
     --border: 220 15% 20%;
     --input: 220 15% 20%;
     --ring: 42 65% 58%;
+    
+    /* Apply dark background and light text directly */
+    background-color: hsl(220, 20%, 6%);
+    color: hsl(45, 30%, 96%);
+    min-height: 100vh;
+  }
+  
+  /* Override Tailwind utility classes within .soq-theme */
+  .soq-theme .bg-background {
+    background-color: hsl(220, 20%, 6%) !important;
+  }
+  
+  .soq-theme .text-foreground {
+    color: hsl(45, 30%, 96%) !important;
+  }
+  
+  .soq-theme .text-primary {
+    color: hsl(42, 65%, 58%) !important;
+  }
+  
+  .soq-theme .text-muted-foreground {
+    color: hsl(220, 15%, 65%) !important;
+  }
+  
+  .soq-theme .border-border {
+    border-color: hsl(220, 15%, 20%) !important;
+  }
+  
+  .soq-theme .border-border\/30 {
+    border-color: hsla(220, 15%, 20%, 0.3) !important;
+  }
+  
+  .soq-theme .bg-primary {
+    background-color: hsl(42, 65%, 58%) !important;
+  }
+  
+  .soq-theme .bg-primary\/10 {
+    background-color: hsla(42, 65%, 58%, 0.1) !important;
+  }
+  
+  .soq-theme .bg-primary\/20 {
+    background-color: hsla(42, 65%, 58%, 0.2) !important;
+  }
+  
+  .soq-theme .text-primary-foreground {
+    color: hsl(220, 20%, 6%) !important;
+  }
+  
+  .soq-theme .bg-secondary\/10 {
+    background-color: hsla(220, 15%, 15%, 0.1) !important;
+  }
+  
+  .soq-theme .bg-secondary\/20 {
+    background-color: hsla(220, 15%, 15%, 0.2) !important;
+  }
+  
+  .soq-theme .border-primary\/30 {
+    border-color: hsla(42, 65%, 58%, 0.3) !important;
+  }
+  
+  .soq-theme .border-primary\/50 {
+    border-color: hsla(42, 65%, 58%, 0.5) !important;
+  }
+  
+  .soq-theme .hover\:border-primary\/30:hover {
+    border-color: hsla(42, 65%, 58%, 0.3) !important;
+  }
+  
+  .soq-theme .hover\:border-primary\/50:hover {
+    border-color: hsla(42, 65%, 58%, 0.5) !important;
+  }
+  
+  .soq-theme .hover\:bg-primary\/10:hover {
+    background-color: hsla(42, 65%, 58%, 0.1) !important;
+  }
+  
+  .soq-theme .hover\:text-primary:hover {
+    color: hsl(42, 65%, 58%) !important;
+  }
+  
+  .soq-theme .bg-background\/80 {
+    background-color: hsla(220, 20%, 6%, 0.8) !important;
+  }
+  
+  .soq-theme .bg-background\/95 {
+    background-color: hsla(220, 20%, 6%, 0.95) !important;
+  }
+  
+  .soq-theme .bg-background\/70 {
+    background-color: hsla(220, 20%, 6%, 0.7) !important;
+  }
+  
+  .soq-theme .bg-background\/50 {
+    background-color: hsla(220, 20%, 6%, 0.5) !important;
+  }
+  
+  .soq-theme .bg-background\/30 {
+    background-color: hsla(220, 20%, 6%, 0.3) !important;
+  }
+  
+  .soq-theme .from-background {
+    --tw-gradient-from: hsl(220, 20%, 6%) !important;
+  }
+  
+  .soq-theme .via-background\/95 {
+    --tw-gradient-via: hsla(220, 20%, 6%, 0.95) !important;
+  }
+  
+  .soq-theme .via-background\/30 {
+    --tw-gradient-via: hsla(220, 20%, 6%, 0.3) !important;
+  }
+  
+  .soq-theme .to-background\/70 {
+    --tw-gradient-to: hsla(220, 20%, 6%, 0.7) !important;
+  }
+  
+  .soq-theme .to-background\/50 {
+    --tw-gradient-to: hsla(220, 20%, 6%, 0.5) !important;
+  }
+  
+  .soq-theme .to-background {
+    --tw-gradient-to: hsl(220, 20%, 6%) !important;
+  }
+  
+  .soq-theme .via-secondary\/10 {
+    --tw-gradient-via: hsla(220, 15%, 15%, 0.1) !important;
+  }
+  
+  .soq-theme .from-secondary\/20 {
+    --tw-gradient-from: hsla(220, 15%, 15%, 0.2) !important;
+  }
+  
+  .soq-theme .via-primary\/50 {
+    --tw-gradient-via: hsla(42, 65%, 58%, 0.5) !important;
+  }
+  
+  .soq-theme .from-primary\/50 {
+    --tw-gradient-from: hsla(42, 65%, 58%, 0.5) !important;
+  }
+  
+  .soq-theme .border-border\/10 {
+    border-color: hsla(220, 15%, 20%, 0.1) !important;
   }
 }
 
