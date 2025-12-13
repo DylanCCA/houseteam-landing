@@ -399,9 +399,9 @@ function App() {
                   <div className="border-t pt-4">
                     <p className="text-sm text-gray-500 mb-3"><strong>Listed by:</strong> {property.agent}</p>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" className="flex-1"><Phone className="h-4 w-4 mr-1" /> Call</Button>
-                      <Button size="sm" variant="outline" className="flex-1"><Mail className="h-4 w-4 mr-1" /> Email</Button>
-                      <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700">View Details</Button>
+                      <Button size="sm" variant="outline" className="flex-1" onClick={() => window.location.href = 'tel:606-224-3261'}><Phone className="h-4 w-4 mr-1" /> Call</Button>
+                      <Button size="sm" variant="outline" className="flex-1" onClick={() => window.location.href = 'mailto:thouse@century21advantage.com?subject=Inquiry about ' + property.address}><Mail className="h-4 w-4 mr-1" /> Email</Button>
+                      <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700" onClick={() => window.location.href = '#contact'}>View Details</Button>
                     </div>
                   </div>
                 </CardContent>
@@ -409,7 +409,7 @@ function App() {
             ))}
           </div>
           <div className="text-center mt-12">
-            <Button size="lg" className="bg-blue-600 hover:bg-blue-700">View All 23 Listings<Users className="h-5 w-5 ml-2" /></Button>
+            <Button size="lg" className="bg-blue-600 hover:bg-blue-700" onClick={() => window.open('https://www.century21.com/real-estate-agent/profile/tabitha-house-P117953697', '_blank')}>View All 23 Listings<Users className="h-5 w-5 ml-2" /></Button>
             <p className="text-gray-600 mt-4">Contact us today to schedule a showing</p>
           </div>
         </div>
