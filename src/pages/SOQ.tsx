@@ -120,7 +120,28 @@ const AnimatedMetric = ({ value, suffix, prefix = "", label, delay = 0 }: Metric
 // Main SOQ Page Component
 const SOQPage = () => {
   return (
-    <div className="soq-theme">
+    <div 
+      className="soq-theme"
+      style={{
+        '--background': '220 20% 6%',
+        '--foreground': '45 30% 96%',
+        '--card': '220 18% 10%',
+        '--card-foreground': '45 30% 96%',
+        '--popover': '220 18% 10%',
+        '--popover-foreground': '45 30% 96%',
+        '--primary': '42 65% 58%',
+        '--primary-foreground': '220 20% 6%',
+        '--secondary': '220 15% 15%',
+        '--secondary-foreground': '45 30% 96%',
+        '--muted': '220 15% 18%',
+        '--muted-foreground': '220 15% 65%',
+        '--accent': '42 65% 58%',
+        '--accent-foreground': '220 20% 6%',
+        '--border': '220 15% 20%',
+        '--input': '220 15% 20%',
+        '--ring': '42 65% 58%',
+      } as React.CSSProperties}
+    >
     <main className="min-h-screen bg-background">
       {/* Header */}
       <motion.header
