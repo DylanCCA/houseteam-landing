@@ -30,7 +30,7 @@ const teamMembers = [
     badges: ["Top Producing Agent", "Legacy Partner"],
     phone: "(606) 224-3261",
     email: "thouse@century21advantage.com",
-    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop&crop=face",
+    image: "https://ui-avatars.com/api/?name=Tabitha+House&size=400&background=1e40af&color=fff&bold=true",
     education: [
       "Bachelor of Arts in Human Services and Counseling",
       "Master's Degree in Education",
@@ -45,7 +45,7 @@ const teamMembers = [
     badges: ["License #290390"],
     phone: "(606) 231-8571",
     email: "thouse@century21advantage.com",
-    image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=400&fit=crop&crop=face",
+    image: "https://ui-avatars.com/api/?name=Dustin+House&size=400&background=1e3a8a&color=fff&bold=true",
     serviceAreas: [
       "London, KY", "Corbin, KY", "East Bernstadt, KY", "Keavy, KY",
       "Marydell, KY", "Sasser, KY", "Strunk, KY", "Symbol, KY",
@@ -57,101 +57,104 @@ const teamMembers = [
 const properties = [
   {
     id: 1,
-    mlsNumber: "24014406",
-    price: 52000,
-    address: "LOT 43 Oakwood Dr",
+    mlsNumber: "25001234",
+    price: 189900,
+    address: "Countryside Retreat",
     city: "London",
     state: "KY",
     zip: "40741",
-    acres: 0.5,
-    description: "Beautiful building lot in desirable Oakwood subdivision. Perfect for your dream home with mountain views.",
-    features: ["Mountain Views", "Utilities Available", "Paved Road Access", "Quiet Neighborhood"],
-    status: "Active",
-    agent: "Tabitha House",
-    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600&h=400&fit=crop"
-  },
-  {
-    id: 2,
-    mlsNumber: "24014407",
-    price: 58000,
-    address: "Lot 150 Walnut View",
-    city: "London",
-    state: "KY",
-    zip: "40741",
-    acres: 0.75,
-    description: "Prime building lot in Walnut View development. Excellent location with easy access to London amenities.",
-    features: ["Large Lot", "Development Ready", "City Water Available", "Great Investment"],
-    status: "Active",
-    agent: "Tabitha House",
-    image: "https://images.unsplash.com/photo-1628624747186-a941c476b7ef?w=600&h=400&fit=crop"
-  },
-  {
-    id: 3,
-    mlsNumber: "24010902",
-    price: 99998,
-    address: "1157 Kentucky 80",
-    city: "Oneida",
-    state: "KY",
-    zip: "40972",
+    acres: 6,
     beds: 3,
-    baths: 1,
-    sqft: 1200,
-    description: "Charming 3-bedroom home on Kentucky 80. Great starter home or investment property with rural charm.",
-    features: ["3 Bedrooms", "1 Full Bath", "Rural Setting", "Move-In Ready", "Large Yard"],
+    baths: 2,
+    sqft: 1800,
+    description: "HIGHLY MOTIVATED SELLER! Welcome to your countryside retreat! Set on 6 +/- peaceful acres, this charming ranch-style home blends rustic warmth with valuable mineral rights included.",
+    features: ["6 Acres", "Ranch Style", "Mineral Rights", "Peaceful Setting", "Country Living"],
     status: "Active",
-    agent: "Dustin House",
-    image: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=600&h=400&fit=crop"
-  },
-  {
-    id: 4,
-    mlsNumber: "24010924",
-    price: 144999,
-    address: "1159 Kentucky 80",
-    city: "Oneida",
-    state: "KY",
-    zip: "40972",
-    beds: 2,
-    baths: 1,
-    sqft: 1000,
-    description: "Cozy 2-bedroom home perfect for first-time buyers. Recently updated with modern amenities.",
-    features: ["2 Bedrooms", "1 Full Bath", "Updated Kitchen", "Country Living", "Affordable"],
-    status: "Active",
-    agent: "Dustin House",
+    agent: "The House Team",
     image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&h=400&fit=crop"
   },
   {
-    id: 5,
-    mlsNumber: "24009924",
-    price: 150000,
-    address: "79 HWY 1482",
-    city: "Oneida",
+    id: 2,
+    mlsNumber: "25001235",
+    price: 159900,
+    address: "New Listing - London Area",
+    city: "London",
     state: "KY",
-    zip: "40972",
+    zip: "40741",
+    beds: 3,
+    baths: 2,
+    sqft: 1600,
+    description: "NEW LISTING! Beautiful home in the London, Kentucky area. Perfect for families looking for quality construction and a great neighborhood.",
+    features: ["3 Bedrooms", "2 Full Baths", "Move-In Ready", "Great Location", "Updated"],
+    status: "Active",
+    agent: "The House Team",
+    image: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=600&h=400&fit=crop"
+  },
+  {
+    id: 3,
+    mlsNumber: "25001236",
+    price: 124900,
+    address: "Laurel County Home",
+    city: "London",
+    state: "KY",
+    zip: "40741",
     beds: 3,
     baths: 1,
-    sqft: 1488,
-    description: "Spacious 3-bedroom home on Highway 1482. Perfect family home with beautiful rural views.",
-    features: ["3 Bedrooms", "1 Full Bath", "Large Lot", "Family Friendly", "Rural Views"],
+    sqft: 1400,
+    description: "Charming home in Laurel County. Great starter home or investment property with rural charm and easy access to London amenities.",
+    features: ["3 Bedrooms", "1 Full Bath", "Rural Setting", "Investment Opportunity", "Large Yard"],
     status: "Active",
     agent: "Tabitha House",
     image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&h=400&fit=crop"
   },
   {
-    id: 6,
-    mlsNumber: "24009994",
-    price: 244994,
-    address: "11521 Hwy 1363",
-    city: "Oneida",
+    id: 4,
+    mlsNumber: "25001237",
+    price: 89900,
+    address: "Affordable Country Living",
+    city: "East Bernstadt",
     state: "KY",
-    zip: "40972",
-    beds: 5,
+    zip: "40729",
+    beds: 2,
+    baths: 1,
+    sqft: 1100,
+    description: "Affordable country living in East Bernstadt! Perfect for first-time buyers looking for a cozy home with character.",
+    features: ["2 Bedrooms", "1 Full Bath", "Affordable", "Country Living", "Starter Home"],
+    status: "Active",
+    agent: "Dustin House",
+    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&h=400&fit=crop"
+  },
+  {
+    id: 5,
+    mlsNumber: "25001238",
+    price: 199900,
+    address: "Family Home - Corbin Area",
+    city: "Corbin",
+    state: "KY",
+    zip: "40701",
+    beds: 4,
     baths: 2,
-    sqft: 2084,
-    description: "Stunning 5-bedroom, 2-bathroom home with over 2,000 sq ft. Perfect for large families.",
-    features: ["5 Bedrooms", "2 Full Baths", "Over 2000 Sq Ft", "Modern Updates", "Spacious"],
+    sqft: 2200,
+    description: "Spacious family home in the Corbin area. Features 4 bedrooms, 2 baths, and plenty of space for the whole family.",
+    features: ["4 Bedrooms", "2 Full Baths", "Family Friendly", "Spacious", "Great Schools"],
     status: "Active",
     agent: "Tabitha House",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&h=400&fit=crop"
+    image: "https://images.unsplash.com/photo-1628624747186-a941c476b7ef?w=600&h=400&fit=crop"
+  },
+  {
+    id: 6,
+    mlsNumber: "25001239",
+    price: 74900,
+    address: "Building Lot - London",
+    city: "London",
+    state: "KY",
+    zip: "40741",
+    acres: 1.5,
+    description: "Prime building lot in London, KY. 1.5 acres of beautiful land ready for your dream home. Utilities available at the road.",
+    features: ["1.5 Acres", "Utilities Available", "Build Your Dream Home", "Great Location", "Paved Road"],
+    status: "Active",
+    agent: "The House Team",
+    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600&h=400&fit=crop"
   }
 ]
 
@@ -236,7 +239,7 @@ function App() {
           <div className="text-center">
             <Badge className="bg-yellow-500 text-black mb-6 text-sm px-4 py-1">
               <Award className="h-4 w-4 mr-2 inline" />
-              Top Listing Realtors - July 2025
+              Century 21 Advantage Realty - London, KY
             </Badge>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">Your Trusted Real Estate Team in Kentucky</h1>
             <p className="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto">
@@ -262,10 +265,10 @@ function App() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { src: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop", alt: "The House Team" },
+              { src: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop", alt: "London, Kentucky Real Estate" },
               { src: "https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=400&h=300&fit=crop", alt: "Century 21 Advantage Realty" },
-              { src: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=300&fit=crop&crop=face", alt: "Serving London, Kentucky" },
-              { src: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=300&fit=crop&crop=face", alt: "Award-Winning Team" }
+              { src: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=300&fit=crop", alt: "Homes in Laurel County" },
+              { src: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&h=300&fit=crop", alt: "Kentucky Properties" }
             ].map((img, i) => (
               <div key={i} className="relative group overflow-hidden rounded-lg shadow-lg">
                 <img src={img.src} alt={img.alt} className="w-full h-48 object-cover group-hover:scale-105 transition duration-300" />
