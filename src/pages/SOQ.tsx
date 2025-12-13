@@ -2,6 +2,10 @@ import { motion, useInView } from 'framer-motion';
 import { useRef, useEffect, useState } from 'react';
 import { Phone, Mail, MapPin, ArrowRight, Building2, TrendingUp, Handshake, Award, Shield, Clock, Quote, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import tabithaHouseStats from '@/data/agentStats';
+
+// Agent stats from configuration (can be updated daily)
+const agentStats = tabithaHouseStats;
 
 // Tabitha House's Real Performance Data from Research
 const awards = [
@@ -303,10 +307,10 @@ const SOQPage = () => {
           </motion.div>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
-            <AnimatedMetric value={68} suffix="+" prefix="" label="Sales Last 12 Months" delay={0} />
-            <AnimatedMetric value={223} suffix="+" prefix="" label="Total Transactions" delay={200} />
-            <AnimatedMetric value={4} suffix="" prefix="" label="Years Experience" delay={400} />
-            <AnimatedMetric value={5} suffix=".0" prefix="" label="Star Rating" delay={600} />
+            <AnimatedMetric value={agentStats.salesLast12Months} suffix="+" prefix="" label="Sales Last 12 Months" delay={0} />
+            <AnimatedMetric value={agentStats.totalTransactions} suffix="+" prefix="" label="Total Transactions" delay={200} />
+            <AnimatedMetric value={agentStats.yearsExperience} suffix="" prefix="" label="Years Experience" delay={400} />
+            <AnimatedMetric value={Math.floor(agentStats.starRating)} suffix=".0" prefix="" label="Star Rating" delay={600} />
           </div>
         </div>
       </section>
