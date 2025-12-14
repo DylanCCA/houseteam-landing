@@ -16,6 +16,11 @@ const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') || ''
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'
 const OPENAI_MODEL = 'gpt-4o'
 
+// Resend Email Configuration
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || ''
+const TEAM_EMAIL = 'thouse@century21advantage.com'
+const FROM_EMAIL = 'bot@houseteamrealtors.com'
+
 // Supabase Configuration
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
@@ -87,17 +92,30 @@ ${KY_KNOWLEDGE}
 - Keep responses concise but informative
 
 ## Property Search
-When users want to search for properties, extract these criteria from their message:
-- City (London, Corbin, Lexington, etc.)
+IMPORTANT: When users ask about properties, listings, homes, or real estate - ALWAYS trigger a property search. Don't ask for clarification - just search with whatever criteria they provide. If they don't specify criteria, search all active listings.
+
+Extract these criteria from their message (all are optional):
+- City (London, Manchester, McKee, Oneida - these are the main areas we serve)
 - Price range (min/max)
 - Bedrooms
 - Square footage
-- Property type
+- Property type (SF=Single Family, FA=Farm, UL=Land, BU=Business, OF=Office)
 
-Format property search requests as JSON in your response using this format:
+Current active listings include properties in: London, Manchester, McKee, Oneida (Jackson, Clay, and Knox Counties)
+
+ALWAYS format property search requests as JSON in your response using this format:
 [PROPERTY_SEARCH]{"city":"London","maxPrice":300000,"minBeds":3}[/PROPERTY_SEARCH]
 
-After the search tag, provide a natural language response about what you're searching for.`
+To search ALL listings: [PROPERTY_SEARCH]{}[/PROPERTY_SEARCH]
+Available criteria: city, minPrice, maxPrice, minBeds, minSqft, propertyType
+
+After the search tag, provide a natural language response about what you found.
+
+## Email Actions
+When users want to schedule a showing, request more information, or contact the team, use this format:
+[SEND_EMAIL]{"type":"showing_request","property_address":"123 Main St","user_message":"I'd like to schedule a showing"}[/SEND_EMAIL]
+
+Email types: showing_request, property_inquiry, general_contact`
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
@@ -154,21 +172,37 @@ async function callOpenAI(messages: ChatMessage[], maxTokens: number, temperatur
   return response.json()
 }
 
-// Search properties in Supabase
+// Property type mapping for display
+const PROPERTY_TYPE_MAP: Record<string, string> = {
+  'SF': 'Single Family',
+  'MF': 'Multi-Family',
+  'CO': 'Condo',
+  'TH': 'Townhouse',
+  'UL': 'Land',
+  'FA': 'Farm',
+  'BU': 'Business',
+  'OF': 'Office',
+  'RE': 'Retail',
+  'IN': 'Industrial'
+}
+
+// Search properties in Supabase - uses real MLS data from mls_listings table
 async function searchProperties(supabase: ReturnType<typeof createClient>, criteria: {
   city?: string
   minPrice?: number
   maxPrice?: number
   minBeds?: number
   minSqft?: number
+  propertyType?: string
 }) {
+  // Query real MLS listings table
   let query = supabase
-    .from('ky_property_listings')
+    .from('mls_listings')
     .select('*')
     .eq('status', 'Active')
 
   if (criteria.city) {
-    query = query.ilike('city', criteria.city)
+    query = query.ilike('city', `%${criteria.city}%`)
   }
   if (criteria.maxPrice) {
     query = query.lte('price', criteria.maxPrice)
@@ -180,17 +214,106 @@ async function searchProperties(supabase: ReturnType<typeof createClient>, crite
     query = query.gte('beds', criteria.minBeds)
   }
   if (criteria.minSqft) {
-    query = query.gte('sqft', criteria.minSqft)
+    query = query.gte('living_area', criteria.minSqft)
+  }
+  if (criteria.propertyType) {
+    query = query.eq('property_type', criteria.propertyType)
   }
 
-  const { data, error } = await query.order('price', { ascending: true }).limit(10)
+  const { data, error } = await query.order('price', { ascending: false }).limit(10)
 
   if (error) {
-    console.error('Property search error:', error)
+    console.error('MLS property search error:', error)
     return []
   }
 
-  return data || []
+  // Normalize MLS data to match frontend Property interface
+  const normalizedData = (data || []).map((listing: any) => ({
+    id: listing.id,
+    mls_number: listing.mls_number,
+    address: listing.address,
+    city: listing.city,
+    state: listing.state || 'KY',
+    zip: listing.zip,
+    county: listing.county,
+    price: listing.price,
+    beds: listing.beds,
+    baths_total: listing.baths_total,
+    sqft: listing.living_area,
+    lot_size_acres: listing.lot_size_acres,
+    year_built: listing.year_built,
+    property_type: PROPERTY_TYPE_MAP[listing.property_type] || listing.property_type,
+    status: listing.status,
+    status_note: listing.status_note,
+    description: `${listing.beds ? listing.beds + ' bedroom' : ''} ${PROPERTY_TYPE_MAP[listing.property_type] || listing.property_type} in ${listing.city}, ${listing.county}. ${listing.lot_size_acres ? listing.lot_size_acres + ' acres.' : ''} Listed by ${listing.agent_name}${listing.co_listing_agent ? ' & ' + listing.co_listing_agent : ''} at ${listing.office}.`,
+    listing_agent: listing.agent_name,
+    co_listing_agent: listing.co_listing_agent,
+    listing_office: listing.office,
+    days_on_market: listing.dom,
+    image_urls: []
+  }))
+
+  return normalizedData
+}
+
+// Send email via Resend API
+async function sendEmail(emailData: {
+  type: string
+  property_address?: string
+  user_message?: string
+  user_email?: string
+  user_name?: string
+}): Promise<{ success: boolean; message: string }> {
+  if (!RESEND_API_KEY) {
+    console.log('Resend API key not configured, skipping email')
+    return { success: false, message: 'Email service not configured' }
+  }
+
+  const subjectMap: Record<string, string> = {
+    'showing_request': `Showing Request: ${emailData.property_address || 'Property Inquiry'}`,
+    'property_inquiry': `Property Inquiry: ${emailData.property_address || 'General'}`,
+    'general_contact': 'New Contact from Kentucky Real Estate Bot'
+  }
+
+  const subject = subjectMap[emailData.type] || 'New Message from Kentucky Real Estate Bot'
+
+  const htmlBody = `
+    <h2>New ${emailData.type.replace('_', ' ')} from Kentucky Real Estate Bot</h2>
+    ${emailData.property_address ? `<p><strong>Property:</strong> ${emailData.property_address}</p>` : ''}
+    ${emailData.user_name ? `<p><strong>Name:</strong> ${emailData.user_name}</p>` : ''}
+    ${emailData.user_email ? `<p><strong>Email:</strong> ${emailData.user_email}</p>` : ''}
+    <p><strong>Message:</strong></p>
+    <p>${emailData.user_message || 'No message provided'}</p>
+    <hr>
+    <p><em>Sent via The House Team AI Assistant</em></p>
+  `
+
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: FROM_EMAIL,
+        to: TEAM_EMAIL,
+        subject: subject,
+        html: htmlBody
+      })
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      console.error('Resend API error:', error)
+      return { success: false, message: 'Failed to send email' }
+    }
+
+    return { success: true, message: 'Email sent successfully' }
+  } catch (error) {
+    console.error('Email sending error:', error)
+    return { success: false, message: 'Email service error' }
+  }
 }
 
 // Parse property search criteria from LLM response
@@ -208,6 +331,23 @@ function parsePropertySearch(response: string): { criteria: any | null, cleanRes
   }
 
   return { criteria: null, cleanResponse: response }
+}
+
+// Parse email request from LLM response
+function parseEmailRequest(response: string): { emailData: any | null, cleanResponse: string } {
+  const emailMatch = response.match(/\[SEND_EMAIL\](.*?)\[\/SEND_EMAIL\]/s)
+
+  if (emailMatch) {
+    try {
+      const emailData = JSON.parse(emailMatch[1])
+      const cleanResponse = response.replace(/\[SEND_EMAIL\].*?\[\/SEND_EMAIL\]/s, '').trim()
+      return { emailData, cleanResponse }
+    } catch (e) {
+      console.error('Failed to parse email request:', e)
+    }
+  }
+
+  return { emailData: null, cleanResponse: response }
 }
 
 serve(async (req) => {
@@ -255,11 +395,21 @@ serve(async (req) => {
     const rawResponse = data.choices?.[0]?.message?.content || 'I apologize, but I was unable to generate a response. Please try again or call The House Team at (606) 224-3261.'
 
     // Check if LLM requested a property search
-    const { criteria, cleanResponse } = parsePropertySearch(rawResponse)
+    const { criteria, cleanResponse: afterPropertyParse } = parsePropertySearch(rawResponse)
+
+    // Check if LLM requested an email action
+    const { emailData, cleanResponse } = parseEmailRequest(afterPropertyParse)
 
     let properties: any[] = []
     if (criteria) {
       properties = await searchProperties(supabase, criteria)
+    }
+
+    let emailSent = false
+    if (emailData) {
+      const emailResult = await sendEmail(emailData)
+      emailSent = emailResult.success
+      console.log('Email result:', emailResult)
     }
 
     const latencyMs = Date.now() - startTime
@@ -269,6 +419,7 @@ serve(async (req) => {
         success: true,
         message: cleanResponse,
         properties: properties,
+        emailSent: emailSent,
         usage: data.usage,
         model: usedModel,
         usedH200: usedH200,
