@@ -90,30 +90,45 @@ ${KY_KNOWLEDGE}
 ## Response Guidelines
 - Be friendly, professional, and helpful
 - Use markdown formatting for readability
-- When users ask about properties, extract search criteria and query the database
 - Always mention The House Team contact info when appropriate: (606) 224-3261
 - If you don't know something specific, recommend contacting The House Team directly
 - Keep responses concise but informative
 
-## Property Search
-IMPORTANT: When users ask about properties, listings, homes, or real estate - ALWAYS trigger a property search. Don't ask for clarification - just search with whatever criteria they provide. If they don't specify criteria, search all active listings.
+## Property Search (CRITICAL - YOU MUST FOLLOW THIS)
 
-Extract these criteria from their message (all are optional):
-- City (London, Manchester, McKee, Oneida - these are the main areas we serve)
-- Price range (min/max)
-- Bedrooms
-- Square footage
-- Property type (SF=Single Family, FA=Farm, UL=Land, BU=Business, OF=Office)
+You CANNOT access MLS data directly. The ONLY way to retrieve listings is by emitting a PROPERTY_SEARCH tag.
 
-Current active listings include properties in: London, Manchester, McKee, Oneida (Jackson, Clay, and Knox Counties)
+**RULE: When the user asks about homes, properties, listings, houses, real estate for sale, or mentions ANY price range or city - you MUST output a PROPERTY_SEARCH tag FIRST, before any other text.**
 
-ALWAYS format property search requests as JSON in your response using this format:
-[PROPERTY_SEARCH]{"city":"London","maxPrice":300000,"minBeds":3}[/PROPERTY_SEARCH]
+Format (must be on its own line, valid JSON):
+[PROPERTY_SEARCH]{"city":"London","minPrice":200000,"maxPrice":450000}[/PROPERTY_SEARCH]
 
-To search ALL listings: [PROPERTY_SEARCH]{}[/PROPERTY_SEARCH]
-Available criteria: city, minPrice, maxPrice, minBeds, minSqft, propertyType
+Available criteria: city, minPrice, maxPrice, minBeds, minSqft, propertyType (SF, FA, UL, BU, OF)
+Cities we serve: London, Manchester, McKee, Oneida
 
-After the search tag, provide a natural language response about what you found.
+**If you do NOT output a PROPERTY_SEARCH tag, the user will see ZERO listings.**
+**Do NOT describe or invent properties yourself - listings come ONLY from the database via this tag.**
+
+Example 1:
+User: "Show me homes in London under $100,000"
+Your response:
+[PROPERTY_SEARCH]{"city":"London","maxPrice":100000}[/PROPERTY_SEARCH]
+
+I'm searching for homes in London, KY under $100,000. Here's what I found in our MLS database.
+
+Example 2:
+User: "List all listings in london ky. 200k-450k residential"
+Your response:
+[PROPERTY_SEARCH]{"city":"London","minPrice":200000,"maxPrice":450000,"propertyType":"SF"}[/PROPERTY_SEARCH]
+
+I'm searching for residential properties in London, KY between $200,000 and $450,000.
+
+Example 3:
+User: "What properties do you have?"
+Your response:
+[PROPERTY_SEARCH]{}[/PROPERTY_SEARCH]
+
+Let me show you all our current active listings.
 
 ## Email Actions
 When users want to schedule a showing, request more information, or contact the team, use this format:
@@ -493,6 +508,129 @@ function parseEmailRequest(response: string): { emailData: any | null, cleanResp
   return { emailData: null, cleanResponse: response }
 }
 
+// Fallback: Detect property queries from user message and extract criteria
+// This runs when the LLM forgets to use the PROPERTY_SEARCH tag
+function detectPropertyQuery(userMessage: string): { isPropertyQuery: boolean, criteria: any } {
+  const msg = userMessage.toLowerCase()
+  
+  // Keywords that indicate a property search
+  const propertyKeywords = [
+    'listing', 'listings', 'home', 'homes', 'house', 'houses', 'property', 'properties',
+    'for sale', 'available', 'show me', 'find me', 'search for', 'looking for',
+    'bedroom', 'bed', 'bath', 'sqft', 'square feet', 'acres', 'land', 'farm',
+    'residential', 'commercial', 'what do you have', 'what\'s available'
+  ]
+  
+  // Cities we serve
+  const cities = ['london', 'manchester', 'mckee', 'oneida', 'corbin', 'laurel']
+  
+  // Check if this looks like a property query
+  const hasPropertyKeyword = propertyKeywords.some(kw => msg.includes(kw))
+  const hasCity = cities.some(city => msg.includes(city))
+  const hasPricePattern = /\$?\d+[k,]?\s*[-–to]\s*\$?\d+[k]?|\$\d+|under\s+\$?\d+|over\s+\$?\d+|\d+k/i.test(msg)
+  
+  const isPropertyQuery = hasPropertyKeyword || (hasCity && hasPricePattern)
+  
+  if (!isPropertyQuery) {
+    return { isPropertyQuery: false, criteria: null }
+  }
+  
+  // Extract criteria from the message
+  const criteria: any = {}
+  
+  // Extract city
+  for (const city of cities) {
+    if (msg.includes(city)) {
+      criteria.city = city.charAt(0).toUpperCase() + city.slice(1)
+      break
+    }
+  }
+  
+  // Extract price range - handle formats like "200k-450k", "$200,000 to $450,000", "under $300k"
+  const priceRangeMatch = msg.match(/(\d+)[k,]*\s*[-–to]+\s*(\d+)[k]*/i)
+  if (priceRangeMatch) {
+    let min = parseInt(priceRangeMatch[1])
+    let max = parseInt(priceRangeMatch[2])
+    // Handle "k" notation
+    if (min < 10000) min *= 1000
+    if (max < 10000) max *= 1000
+    criteria.minPrice = min
+    criteria.maxPrice = max
+  } else {
+    // Check for "under X" or "below X"
+    const underMatch = msg.match(/(?:under|below|less than|max)\s*\$?(\d+)[k,]*/i)
+    if (underMatch) {
+      let max = parseInt(underMatch[1])
+      if (max < 10000) max *= 1000
+      criteria.maxPrice = max
+    }
+    // Check for "over X" or "above X"
+    const overMatch = msg.match(/(?:over|above|more than|min|at least)\s*\$?(\d+)[k,]*/i)
+    if (overMatch) {
+      let min = parseInt(overMatch[1])
+      if (min < 10000) min *= 1000
+      criteria.minPrice = min
+    }
+  }
+  
+  // Extract bedrooms
+  const bedsMatch = msg.match(/(\d+)\s*(?:bed|bedroom|br)/i)
+  if (bedsMatch) {
+    criteria.minBeds = parseInt(bedsMatch[1])
+  }
+  
+  // Extract property type
+  if (msg.includes('residential') || msg.includes('single family')) {
+    criteria.propertyType = 'SF'
+  } else if (msg.includes('farm')) {
+    criteria.propertyType = 'FA'
+  } else if (msg.includes('land')) {
+    criteria.propertyType = 'UL'
+  } else if (msg.includes('commercial') || msg.includes('business')) {
+    criteria.propertyType = 'BU'
+  }
+  
+  console.log('Fallback property detection:', { userMessage: msg.substring(0, 100), isPropertyQuery, criteria })
+  
+  return { isPropertyQuery, criteria }
+}
+
+// Generate a helpful "no results" message
+function generateNoResultsMessage(criteria: any): string {
+  const parts: string[] = []
+  
+  if (criteria.city) {
+    parts.push(`in ${criteria.city}, KY`)
+  }
+  
+  if (criteria.minPrice && criteria.maxPrice) {
+    parts.push(`between $${criteria.minPrice.toLocaleString()} and $${criteria.maxPrice.toLocaleString()}`)
+  } else if (criteria.maxPrice) {
+    parts.push(`under $${criteria.maxPrice.toLocaleString()}`)
+  } else if (criteria.minPrice) {
+    parts.push(`over $${criteria.minPrice.toLocaleString()}`)
+  }
+  
+  if (criteria.minBeds) {
+    parts.push(`with ${criteria.minBeds}+ bedrooms`)
+  }
+  
+  const criteriaDesc = parts.length > 0 ? parts.join(' ') : 'matching your criteria'
+  
+  return `I searched our current MLS database but couldn't find any active listings ${criteriaDesc}.
+
+**Our current inventory includes properties in:**
+- London, KY (prices from $3,200 - $83,920)
+- McKee, KY ($309,000)
+- Manchester, KY ($2,000 - $6,000)
+- Oneida, KY ($90,000 - $150,000)
+
+Would you like me to:
+- **Widen the search** to include nearby areas or adjust the price range?
+- **Show all listings** currently available?
+- **Contact The House Team** at (606) 224-3261 for properties coming soon?`
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -536,9 +674,25 @@ serve(async (req) => {
     }
 
     const rawResponse = data.choices?.[0]?.message?.content || 'I apologize, but I was unable to generate a response. Please try again or call The House Team at (606) 224-3261.'
+    
+    console.log('Raw LLM response:', rawResponse.substring(0, 500))
 
     // Check if LLM requested a property search
-    const { criteria, cleanResponse: afterPropertyParse } = parsePropertySearch(rawResponse)
+    let { criteria, cleanResponse: afterPropertyParse } = parsePropertySearch(rawResponse)
+    
+    // Get the last user message for fallback detection
+    const lastUserMessage = messages.length > 0 ? messages[messages.length - 1].content : ''
+    
+    // FALLBACK: If LLM didn't use PROPERTY_SEARCH tag but user asked about properties
+    let usedFallback = false
+    if (!criteria) {
+      const fallback = detectPropertyQuery(lastUserMessage)
+      if (fallback.isPropertyQuery) {
+        console.log('Using fallback property detection - LLM missed the tag')
+        criteria = fallback.criteria || {}
+        usedFallback = true
+      }
+    }
 
     // Check if LLM requested a web search
     const { query: webSearchQuery, cleanResponse: afterWebParse } = parseWebSearch(afterPropertyParse)
@@ -547,8 +701,11 @@ serve(async (req) => {
     const { emailData, cleanResponse } = parseEmailRequest(afterWebParse)
 
     let properties: any[] = []
+    let searchWasAttempted = false
     if (criteria) {
+      searchWasAttempted = true
       properties = await searchProperties(supabase, criteria)
+      console.log('Property search results:', { criteria, count: properties.length })
     }
 
     let webSearchResults: string | undefined
@@ -569,10 +726,17 @@ serve(async (req) => {
 
     const latencyMs = Date.now() - startTime
 
-    // Combine message with web search results if available
+    // Build final message
     let finalMessage = cleanResponse
+    
+    // Handle "no results" case - override LLM's generic message with helpful info
+    if (searchWasAttempted && properties.length === 0) {
+      finalMessage = generateNoResultsMessage(criteria)
+    }
+    
+    // Combine message with web search results if available
     if (webSearchResults) {
-      finalMessage = `${cleanResponse}\n\n**Web Search Results:**\n${webSearchResults}`
+      finalMessage = `${finalMessage}\n\n**Web Search Results:**\n${webSearchResults}`
     }
 
     return new Response(
