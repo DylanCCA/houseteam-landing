@@ -20,6 +20,13 @@ const OPENAI_MODEL = 'gpt-4o'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 
+// Resend Email Configuration
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || ''
+const HOUSE_TEAM_EMAIL = 'thouse@century21advantage.com'
+
+// SerpAPI for web search (optional)
+const SERPAPI_KEY = Deno.env.get('SERPAPI_KEY') || ''
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -88,7 +95,7 @@ ${KY_KNOWLEDGE}
 
 ## Property Search
 When users want to search for properties, extract these criteria from their message:
-- City (London, Corbin, Lexington, etc.)
+- City (London, Corbin, Lexington, McKee, Manchester, Oneida, etc.)
 - Price range (min/max)
 - Bedrooms
 - Square footage
@@ -97,7 +104,30 @@ When users want to search for properties, extract these criteria from their mess
 Format property search requests as JSON in your response using this format:
 [PROPERTY_SEARCH]{"city":"London","maxPrice":300000,"minBeds":3}[/PROPERTY_SEARCH]
 
-After the search tag, provide a natural language response about what you're searching for.`
+After the search tag, provide a natural language response about what you're searching for.
+
+## Email Functionality
+When users want to:
+- Schedule a showing
+- Request more information about a property
+- Contact The House Team
+- Send their contact details
+
+Use this format to trigger an email:
+[SEND_EMAIL]{"type":"showing_request","propertyAddress":"123 Main St","userName":"John Doe","userEmail":"john@example.com","userPhone":"555-1234","message":"I'd like to schedule a showing"}[/SEND_EMAIL]
+
+Email types: "showing_request", "property_inquiry", "general_contact"
+
+## Web Search
+When users ask about:
+- Current market conditions
+- Recent sales data
+- Neighborhood information
+- School ratings
+- Local amenities
+
+You can search the web for real-time information using:
+[WEB_SEARCH]{"query":"London KY real estate market 2025"}[/WEB_SEARCH]`
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
@@ -154,7 +184,7 @@ async function callOpenAI(messages: ChatMessage[], maxTokens: number, temperatur
   return response.json()
 }
 
-// Search properties in Supabase
+// Search properties in Supabase - uses REAL MLS data from mls_listings table
 async function searchProperties(supabase: ReturnType<typeof createClient>, criteria: {
   city?: string
   minPrice?: number
@@ -163,12 +193,12 @@ async function searchProperties(supabase: ReturnType<typeof createClient>, crite
   minSqft?: number
 }) {
   let query = supabase
-    .from('ky_property_listings')
+    .from('mls_listings')
     .select('*')
     .eq('status', 'Active')
 
   if (criteria.city) {
-    query = query.ilike('city', criteria.city)
+    query = query.ilike('city', `%${criteria.city}%`)
   }
   if (criteria.maxPrice) {
     query = query.lte('price', criteria.maxPrice)
@@ -180,7 +210,7 @@ async function searchProperties(supabase: ReturnType<typeof createClient>, crite
     query = query.gte('beds', criteria.minBeds)
   }
   if (criteria.minSqft) {
-    query = query.gte('sqft', criteria.minSqft)
+    query = query.gte('living_area', criteria.minSqft)
   }
 
   const { data, error } = await query.order('price', { ascending: true }).limit(10)
@@ -190,7 +220,120 @@ async function searchProperties(supabase: ReturnType<typeof createClient>, crite
     return []
   }
 
-  return data || []
+  // Transform mls_listings schema to match frontend Property interface
+  return (data || []).map(listing => ({
+    id: listing.id,
+    address: listing.address,
+    city: listing.city,
+    county: listing.county,
+    price: listing.price,
+    beds: listing.beds,
+    baths_total: listing.baths_total,
+    sqft: listing.living_area,
+    lot_size_acres: listing.lot_size_acres,
+    year_built: listing.year_built,
+    property_type: listing.property_type,
+    status: listing.status,
+    description: `MLS# ${listing.mls_number} - ${listing.property_type === 'SF' ? 'Single Family' : listing.property_type} in ${listing.subdivision || listing.city}. Listed by ${listing.agent_name}.`,
+    listing_agent: listing.agent_name,
+    mls_number: listing.mls_number
+  }))
+}
+
+// Send email via Resend
+async function sendEmail(emailData: {
+  type: string
+  propertyAddress?: string
+  userName?: string
+  userEmail?: string
+  userPhone?: string
+  message?: string
+}) {
+  if (!RESEND_API_KEY) {
+    console.warn('Resend API key not configured')
+    return { success: false, error: 'Email service not configured' }
+  }
+
+  const subject = emailData.type === 'showing_request' 
+    ? `Showing Request: ${emailData.propertyAddress}`
+    : emailData.type === 'property_inquiry'
+    ? `Property Inquiry: ${emailData.propertyAddress}`
+    : 'New Contact from Kentucky Real Estate AI Bot'
+
+  const htmlContent = `
+    <h2>${subject}</h2>
+    <p><strong>From:</strong> ${emailData.userName || 'Website Visitor'}</p>
+    <p><strong>Email:</strong> ${emailData.userEmail || 'Not provided'}</p>
+    <p><strong>Phone:</strong> ${emailData.userPhone || 'Not provided'}</p>
+    ${emailData.propertyAddress ? `<p><strong>Property:</strong> ${emailData.propertyAddress}</p>` : ''}
+    <p><strong>Message:</strong></p>
+    <p>${emailData.message || 'No message provided'}</p>
+    <hr>
+    <p><em>This message was sent via the Kentucky Real Estate AI Bot at houseteamrealtors.com/bot</em></p>
+  `
+
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'Kentucky Real Estate Bot <bot@houseteamrealtors.com>',
+        to: [HOUSE_TEAM_EMAIL],
+        reply_to: emailData.userEmail || undefined,
+        subject: subject,
+        html: htmlContent
+      })
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      console.error('Resend API error:', error)
+      return { success: false, error: 'Failed to send email' }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('Email send error:', error)
+    return { success: false, error: 'Email service error' }
+  }
+}
+
+// Web search using SerpAPI (if configured)
+async function webSearch(query: string) {
+  if (!SERPAPI_KEY) {
+    // Fallback: return a message that web search is not available
+    return { success: false, results: [], message: 'Web search not configured. Please contact The House Team directly for current market information.' }
+  }
+
+  try {
+    const params = new URLSearchParams({
+      q: query,
+      api_key: SERPAPI_KEY,
+      engine: 'google',
+      num: '5'
+    })
+
+    const response = await fetch(`https://serpapi.com/search?${params}`)
+    
+    if (!response.ok) {
+      return { success: false, results: [], message: 'Web search temporarily unavailable' }
+    }
+
+    const data = await response.json()
+    const results = (data.organic_results || []).slice(0, 3).map((r: any) => ({
+      title: r.title,
+      snippet: r.snippet,
+      link: r.link
+    }))
+
+    return { success: true, results }
+  } catch (error) {
+    console.error('Web search error:', error)
+    return { success: false, results: [], message: 'Web search error' }
+  }
 }
 
 // Parse property search criteria from LLM response
@@ -208,6 +351,40 @@ function parsePropertySearch(response: string): { criteria: any | null, cleanRes
   }
 
   return { criteria: null, cleanResponse: response }
+}
+
+// Parse email request from LLM response
+function parseEmailRequest(response: string): { emailData: any | null, cleanResponse: string } {
+  const emailMatch = response.match(/\[SEND_EMAIL\](.*?)\[\/SEND_EMAIL\]/s)
+
+  if (emailMatch) {
+    try {
+      const emailData = JSON.parse(emailMatch[1])
+      const cleanResponse = response.replace(/\[SEND_EMAIL\].*?\[\/SEND_EMAIL\]/s, '').trim()
+      return { emailData, cleanResponse }
+    } catch (e) {
+      console.error('Failed to parse email request:', e)
+    }
+  }
+
+  return { emailData: null, cleanResponse: response }
+}
+
+// Parse web search request from LLM response
+function parseWebSearch(response: string): { searchQuery: string | null, cleanResponse: string } {
+  const webMatch = response.match(/\[WEB_SEARCH\](.*?)\[\/WEB_SEARCH\]/s)
+
+  if (webMatch) {
+    try {
+      const data = JSON.parse(webMatch[1])
+      const cleanResponse = response.replace(/\[WEB_SEARCH\].*?\[\/WEB_SEARCH\]/s, '').trim()
+      return { searchQuery: data.query, cleanResponse }
+    } catch (e) {
+      console.error('Failed to parse web search request:', e)
+    }
+  }
+
+  return { searchQuery: null, cleanResponse: response }
 }
 
 serve(async (req) => {
@@ -254,12 +431,38 @@ serve(async (req) => {
 
     const rawResponse = data.choices?.[0]?.message?.content || 'I apologize, but I was unable to generate a response. Please try again or call The House Team at (606) 224-3261.'
 
-    // Check if LLM requested a property search
-    const { criteria, cleanResponse } = parsePropertySearch(rawResponse)
-
+    // Parse all possible actions from LLM response
+    let currentResponse = rawResponse
     let properties: any[] = []
-    if (criteria) {
-      properties = await searchProperties(supabase, criteria)
+    let emailResult: any = null
+    let webSearchResults: any[] = []
+
+    // Check if LLM requested a property search
+    const propertyParse = parsePropertySearch(currentResponse)
+    if (propertyParse.criteria) {
+      properties = await searchProperties(supabase, propertyParse.criteria)
+      currentResponse = propertyParse.cleanResponse
+    }
+
+    // Check if LLM requested to send an email
+    const emailParse = parseEmailRequest(currentResponse)
+    if (emailParse.emailData) {
+      emailResult = await sendEmail(emailParse.emailData)
+      currentResponse = emailParse.cleanResponse
+      if (emailResult.success) {
+        currentResponse += '\n\n✉️ Your message has been sent to The House Team. They will contact you shortly!'
+      }
+    }
+
+    // Check if LLM requested a web search
+    const webParse = parseWebSearch(currentResponse)
+    if (webParse.searchQuery) {
+      const searchResult = await webSearch(webParse.searchQuery)
+      webSearchResults = searchResult.results || []
+      currentResponse = webParse.cleanResponse
+      if (!searchResult.success && searchResult.message) {
+        currentResponse += `\n\n${searchResult.message}`
+      }
     }
 
     const latencyMs = Date.now() - startTime
@@ -267,8 +470,10 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: cleanResponse,
+        message: currentResponse,
         properties: properties,
+        emailSent: emailResult?.success || false,
+        webSearchResults: webSearchResults,
         usage: data.usage,
         model: usedModel,
         usedH200: usedH200,
