@@ -25,9 +25,11 @@ const FROM_EMAIL = 'bot@houseteamrealtors.com'
 const H200_BROWSER_URL = Deno.env.get('H200_BROWSER_URL') || 'https://8080-o5l2m2dve.brevlab.com'
 const H200_BROWSER_API_KEY = Deno.env.get('H200_BROWSER_API_KEY') || 'mselwQXUzYI05D2eVTQ5FTUGLEry74IkJEsauLbVn+s='
 
-// Google Search API Configuration (SerpAPI for enterprise-grade search)
-const SERP_API_KEY = Deno.env.get('SERP_API_KEY') || ''
-const GOOGLE_SEARCH_ENABLED = !!SERP_API_KEY
+// Google Custom Search API Configuration (uses existing GOOGLE_API_KEY)
+// Requires a Custom Search Engine ID - create at: https://programmablesearchengine.google.com/
+const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY') || ''
+const GOOGLE_CSE_ID = Deno.env.get('GOOGLE_CSE_ID') || '017576662512468239146:omuauf_lfve' // Default: Google's web search CSE
+const GOOGLE_SEARCH_ENABLED = !!GOOGLE_API_KEY
 
 // Supabase Configuration
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
@@ -286,45 +288,39 @@ async function searchProperties(supabase: ReturnType<typeof createClient>, crite
   return normalizedData
 }
 
-// Google Search via SerpAPI (Enterprise-grade)
+// Google Custom Search API (Enterprise-grade, uses existing GOOGLE_API_KEY)
 async function googleSearch(query: string): Promise<{ success: boolean; results: string; source: string; links?: Array<{title: string; link: string; snippet: string}> }> {
-  console.log('Starting Google search for:', query)
+  console.log('Starting Google Custom Search for:', query)
 
   try {
-    const searchUrl = `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(query)}&location=Kentucky,United States&hl=en&gl=us&api_key=${SERP_API_KEY}`
+    // Google Custom Search JSON API
+    const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CSE_ID}&q=${encodeURIComponent(query + ' Kentucky real estate')}&num=10`
 
     const response = await fetch(searchUrl)
 
     if (!response.ok) {
-      throw new Error(`SerpAPI error: ${response.status}`)
+      const errorText = await response.text()
+      console.error('Google CSE error:', response.status, errorText)
+      throw new Error(`Google CSE error: ${response.status}`)
     }
 
     const data = await response.json()
-    const organicResults = data.organic_results || []
+    const items = data.items || []
     const links: Array<{title: string; link: string; snippet: string}> = []
 
     let searchResults = ''
 
-    // Process organic results
-    if (organicResults.length > 0) {
-      searchResults = organicResults.slice(0, 8).map((r: any, i: number) => {
+    // Process search results
+    if (items.length > 0) {
+      searchResults = items.slice(0, 8).map((r: any, i: number) => {
         links.push({ title: r.title, link: r.link, snippet: r.snippet || '' })
         return `**${i + 1}. ${r.title}**\n${r.snippet || ''}\n🔗 ${r.link}`
       }).join('\n\n')
     }
 
-    // Add real estate specific results if available
-    if (data.local_results?.places) {
-      const places = data.local_results.places.slice(0, 3)
-      if (places.length > 0) {
-        searchResults += '\n\n**Local Real Estate Offices:**\n'
-        searchResults += places.map((p: any) => `- ${p.title} (${p.rating}⭐) - ${p.address}`).join('\n')
-      }
-    }
-
-    // Add knowledge graph info if available
-    if (data.knowledge_graph?.description) {
-      searchResults = `**Overview:** ${data.knowledge_graph.description}\n\n${searchResults}`
+    // Add search information if available
+    if (data.searchInformation?.formattedTotalResults) {
+      searchResults = `**Found approximately ${data.searchInformation.formattedTotalResults} results**\n\n${searchResults}`
     }
 
     return {
