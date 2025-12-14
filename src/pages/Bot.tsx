@@ -38,6 +38,7 @@ interface Message {
 
 interface Property {
   id: string
+  mls_number?: string
   address: string
   city: string
   county?: string
@@ -51,6 +52,7 @@ interface Property {
   status: string
   description?: string
   listing_url?: string
+  zillow_url?: string
   image_urls?: string[]
   listing_agent?: string
 }
@@ -78,20 +80,49 @@ function formatPrice(price: number): string {
 
 // Property Card Component
 function PropertyCard({ property }: { property: Property }) {
+  // Use Zillow URL as primary link (more likely to have photos/details)
+  const viewUrl = property.zillow_url || property.listing_url
+
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow bg-white">
-      <div className="h-32 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-        <Building2 className="h-12 w-12 text-blue-400" />
-      </div>
+      {/* Clickable header area */}
+      <a
+        href={viewUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block cursor-pointer"
+        title={`View ${property.address} on Zillow`}
+      >
+        <div className="h-32 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center hover:from-blue-200 hover:to-blue-300 transition-colors">
+          <Building2 className="h-12 w-12 text-blue-400" />
+        </div>
+      </a>
       <CardContent className="p-4">
         <div className="flex justify-between items-start mb-2">
-          <h4 className="font-bold text-lg text-blue-600">{formatPrice(property.price)}</h4>
+          <a
+            href={viewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold text-lg text-blue-600 hover:text-blue-800 hover:underline"
+          >
+            {formatPrice(property.price)}
+          </a>
           <Badge variant={property.status === 'Active' ? 'default' : 'secondary'} className="text-xs">
             {property.status}
           </Badge>
         </div>
-        <p className="text-sm text-gray-700 font-medium mb-1">{property.address}</p>
-        <p className="text-xs text-gray-500 mb-3">{property.city}, KY {property.county && `(${property.county})`}</p>
+        <a
+          href={viewUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block hover:underline"
+        >
+          <p className="text-sm text-gray-700 font-medium mb-1">{property.address}</p>
+          <p className="text-xs text-gray-500 mb-1">{property.city}, KY {property.county && `(${property.county})`}</p>
+        </a>
+        {property.mls_number && (
+          <p className="text-xs text-gray-400 mb-3">MLS# {property.mls_number}</p>
+        )}
 
         <div className="flex flex-wrap gap-2 text-xs text-gray-600 mb-3">
           {property.beds && (
@@ -120,7 +151,7 @@ function PropertyCard({ property }: { property: Property }) {
           <p className="text-xs text-gray-500 line-clamp-2 mb-3">{property.description}</p>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 mb-2">
           <Button
             size="sm"
             className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs"
@@ -137,6 +168,18 @@ function PropertyCard({ property }: { property: Property }) {
             <Calendar className="h-3 w-3 mr-1" /> Schedule
           </Button>
         </div>
+
+        {/* View Listing Link */}
+        {viewUrl && (
+          <a
+            href={viewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-center text-xs text-blue-500 hover:text-blue-700 hover:underline py-1"
+          >
+            View Full Listing →
+          </a>
+        )}
       </CardContent>
     </Card>
   )

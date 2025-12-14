@@ -82,56 +82,92 @@ const KY_KNOWLEDGE = `
 - Specialties: Residential and Commercial properties
 `
 
-// System prompt for the Kentucky Real Estate Bot
-const SYSTEM_PROMPT = `You are the Kentucky Real Estate Assistant for The House Team at Century 21 Advantage Realty. You are a professional, knowledgeable AI assistant with REAL capabilities.
+// System prompt for the Kentucky Real Estate Bot - AGENTIC VERSION
+const SYSTEM_PROMPT = `You are an AGENTIC Kentucky Real Estate Assistant for The House Team at Century 21 Advantage Realty.
 
-## YOUR CAPABILITIES - USE THEM TOGETHER
-You have THREE powerful tools. For property searches, USE BOTH MLS AND WEB SEARCH together to give comprehensive results:
+You are NOT a passive chatbot. You are an AUTONOMOUS AGENT that takes initiative, combines multiple data sources, and proactively helps users find properties.
 
-### 1. [PROPERTY_SEARCH] - REAL MLS Database
-Direct access to Kentucky MLS with REAL, LIVE listings from The House Team.
-Format: [PROPERTY_SEARCH]{"city":"London","maxPrice":300000,"minBeds":3}[/PROPERTY_SEARCH]
+## AGENTIC BEHAVIOR - BE PROACTIVE
+
+1. **ALWAYS use BOTH tools for property searches** - Search MLS AND web simultaneously
+2. **Don't wait to be asked** - If MLS returns few results, automatically search the web
+3. **Combine information** - Present MLS listings first, then supplement with web results
+4. **Take action** - When a user shows interest, proactively offer to schedule showings or send info
+5. **Be thorough** - Search multiple ways if initial results are limited
+
+## YOUR TOOLS
+
+### 1. [PROPERTY_SEARCH] - The House Team's MLS Listings
+Direct access to Kentucky MLS. Returns REAL listings from The House Team.
+Format: [PROPERTY_SEARCH]{"city":"London","maxPrice":300000}[/PROPERTY_SEARCH]
 Criteria: city, county, minPrice, maxPrice, minBeds, maxBeds, minBaths, minSqft, propertyType, zipCode
 
-### 2. [WEB_SEARCH] - Google Search for Zillow/Realtor.com
-Search external sites for additional listings from other agents.
-Format: [WEB_SEARCH]{"query":"4 bedroom homes for sale London KY site:zillow.com"}[/WEB_SEARCH]
+### 2. [WEB_SEARCH] - Live Web Search (Zillow, Realtor.com, etc.)
+Searches Google for additional listings from ALL agents/sources.
+Format: [WEB_SEARCH]{"query":"3 bedroom homes London KY Zillow under 300000"}[/WEB_SEARCH]
 
-### 3. [SEND_EMAIL] - Contact The Team
-Format: [SEND_EMAIL]{"type":"showing_request","property_address":"123 Main St","user_message":"..."}[/SEND_EMAIL]
+### 3. [SEND_EMAIL] - Take Action
+Send showing requests or inquiries to The House Team.
+Format: [SEND_EMAIL]{"type":"showing_request","property_address":"123 Main St","user_message":"Interested in viewing"}[/SEND_EMAIL]
 
-## AGENTIC BEHAVIOR - ALWAYS DO BOTH SEARCHES
-When a user asks for properties, ALWAYS use BOTH tools together:
-1. Use [PROPERTY_SEARCH] to get The House Team's MLS listings
-2. Use [WEB_SEARCH] to find additional listings from Zillow/Realtor.com
+## AGENTIC SEARCH STRATEGY
 
-Example for "Show me 4 bedroom homes in London KY":
-[PROPERTY_SEARCH]{"city":"London","minBeds":4}[/PROPERTY_SEARCH]
-[WEB_SEARCH]{"query":"4 bedroom homes for sale London KY site:zillow.com OR site:realtor.com"}[/WEB_SEARCH]
+For ANY property search request:
 
-## CRITICAL RESPONSE RULES
+**Step 1: ALWAYS search MLS first**
+[PROPERTY_SEARCH]{"city":"London"}[/PROPERTY_SEARCH]
 
-1. **DO NOT write placeholder text** - Never write "(MLS results would appear here)" or "(Web search results would appear here)" or similar placeholders. The backend attaches real results automatically.
+**Step 2: ALWAYS also search the web** (don't wait for MLS results)
+[WEB_SEARCH]{"query":"homes for sale London Kentucky"}[/WEB_SEARCH]
 
-2. **Write a brief summary** - After using the tools, write a SHORT summary like:
-   - "Here are homes matching your criteria from The House Team's MLS listings, plus additional options from Zillow and Realtor.com."
-   - "I found several properties that match. Would you like me to schedule a showing?"
+**Step 3: Combine and present results**
+- "Here are The House Team's current listings from MLS..."
+- "I also found these additional listings online..."
+- "Would you like me to schedule a showing for any of these?"
 
-3. **Be proactive** - Always offer to:
-   - Schedule a showing
-   - Refine the search (price, beds, location)
-   - Send more details via email
+## MANDATORY BEHAVIORS
 
-4. **When MLS has no matches** - Say something like:
-   - "The House Team doesn't currently have [X] listings in [location], but I found some great options from other agents on Zillow."
+1. **Property searches = Use BOTH [PROPERTY_SEARCH] AND [WEB_SEARCH]**
+2. **Zillow/Realtor mentioned = IMMEDIATELY use [WEB_SEARCH]**
+3. **User interested in property = Proactively offer [SEND_EMAIL] to schedule**
+4. **Market questions = Use [WEB_SEARCH] for current data**
+5. **Limited results = Expand search criteria and try again**
 
-## RESPONSE FORMAT
-Keep responses SHORT and action-oriented. The property cards and web links will be displayed automatically by the system. Your job is to:
-1. Use the tools
-2. Write a brief, helpful summary (2-3 sentences max)
-3. Offer next steps
+## DATA SOURCES EXPLAINED
 
-## THE HOUSE TEAM INFO
+When users ask about data:
+- **MLS Data**: "Our MLS listings come directly from the Bluegrass REALTORS® MLS, updated twice daily. These are The House Team's active listings."
+- **Web Results**: "I also search Zillow, Realtor.com, and other sites to find ALL available properties in your area, not just our listings."
+- **Why both**: "This gives you the most comprehensive view - our exclusive listings PLUS everything else on the market."
+
+## EXAMPLE AGENTIC RESPONSES
+
+User: "Show me homes in London KY"
+You: [PROPERTY_SEARCH]{"city":"London"}[/PROPERTY_SEARCH]
+[WEB_SEARCH]{"query":"homes for sale London KY 2024"}[/WEB_SEARCH]
+
+Here's what I found:
+
+**The House Team's MLS Listings:**
+[Display MLS results]
+
+**Additional Listings from Other Sources:**
+[Display web results]
+
+Would you like me to schedule a showing for any of these properties? I can also search with different criteria if you'd like to narrow down or expand your options.
+
+---
+
+User: "I like the one on Dogwood"
+You: Great choice! The property at 45 Dogwood is a beautiful 42-acre farm listed at $83,920.
+
+[SEND_EMAIL]{"type":"showing_request","property_address":"45 Dogwood, London KY","user_message":"Client interested in scheduling a showing"}[/SEND_EMAIL]
+
+I've notified The House Team about your interest. Tabitha or Dustin will reach out shortly to schedule a convenient time. You can also call directly at (606) 224-3261.
+
+Would you like more details about this property or see similar listings?
+
+## THE HOUSE TEAM
 ${KY_KNOWLEDGE}
 
 Contact: Tabitha House (606) 224-3261 | Dustin House (606) 231-8571
@@ -461,52 +497,49 @@ async function browserSearch(query: string): Promise<{ success: boolean; results
   }
 }
 
-// Web link type for structured results
-interface WebLink {
-  title: string
-  link: string
-  snippet: string
-  source?: string
-}
-
 // Unified web search function - tries Google API first, falls back to browser
-async function webSearch(query: string): Promise<{ success: boolean; results: string; source?: string; links?: WebLink[] }> {
-  // Try Google Custom Search API first if configured
+async function webSearch(query: string): Promise<{ success: boolean; results: string; source?: string }> {
+  // Try SerpAPI (Google) first if configured
   if (GOOGLE_SEARCH_ENABLED) {
     const googleResult = await googleSearch(query)
     if (googleResult.success) {
-      return {
-        success: true,
-        results: googleResult.results,
-        source: googleResult.source,
-        links: googleResult.links
-      }
+      return googleResult
     }
     console.warn('Google search failed, falling back to browser search')
   }
 
-  // Fallback to browser-based search (no structured links)
+  // Fallback to browser-based search
   return browserSearch(query)
 }
 
-// Parse web search request from LLM response
-function parseWebSearch(response: string): { query: string | null, cleanResponse: string } {
-  const searchMatch = response.match(/\[WEB_SEARCH\](.*?)\[\/WEB_SEARCH\]/s)
+// Parse ALL web search requests from LLM response (supports multiple searches)
+function parseWebSearch(response: string): { queries: string[], cleanResponse: string } {
+  const queries: string[] = []
+  let cleanResponse = response
 
-  if (searchMatch) {
+  // Find ALL [WEB_SEARCH] tags using global regex
+  const searchRegex = /\[WEB_SEARCH\](.*?)\[\/WEB_SEARCH\]/gs
+  let match
+
+  while ((match = searchRegex.exec(response)) !== null) {
     try {
-      const data = JSON.parse(searchMatch[1])
-      const cleanResponse = response.replace(/\[WEB_SEARCH\].*?\[\/WEB_SEARCH\]/s, '').trim()
-      return { query: data.query, cleanResponse }
-    } catch (e) {
+      const data = JSON.parse(match[1])
+      if (data.query) {
+        queries.push(data.query)
+      }
+    } catch {
       // Try as plain text query
-      const query = searchMatch[1].trim()
-      const cleanResponse = response.replace(/\[WEB_SEARCH\].*?\[\/WEB_SEARCH\]/s, '').trim()
-      return { query, cleanResponse }
+      const query = match[1].trim()
+      if (query) {
+        queries.push(query)
+      }
     }
   }
 
-  return { query: null, cleanResponse: response }
+  // Remove all web search tags from response
+  cleanResponse = response.replace(/\[WEB_SEARCH\].*?\[\/WEB_SEARCH\]/gs, '').trim()
+
+  return { queries, cleanResponse }
 }
 
 // Send email via Resend API
@@ -603,18 +636,6 @@ function parseEmailRequest(response: string): { emailData: any | null, cleanResp
   return { emailData: null, cleanResponse: response }
 }
 
-// Build a fallback web search query from property criteria
-function buildFallbackQuery(criteria: any): string {
-  const parts: string[] = []
-  if (criteria.minBeds) parts.push(`${criteria.minBeds} bedroom`)
-  if (criteria.propertyType) parts.push(criteria.propertyType)
-  parts.push('homes for sale')
-  if (criteria.city) parts.push(criteria.city)
-  parts.push('KY')
-  parts.push('site:zillow.com OR site:realtor.com')
-  return parts.join(' ')
-}
-
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -622,15 +643,9 @@ serve(async (req) => {
   }
 
   const startTime = Date.now()
-  
-  // Steps array to track what the bot is doing (for "thinking" feature)
-  const steps: string[] = []
 
   try {
     const { messages, sessionId }: RequestBody = await req.json()
-    const userQuery = messages[messages.length - 1]?.content || ''
-    
-    steps.push(`Understanding your request: "${userQuery.substring(0, 50)}${userQuery.length > 50 ? '...' : ''}"`)
 
     // Initialize Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
@@ -644,8 +659,6 @@ serve(async (req) => {
     let data: { choices?: Array<{ message?: { content?: string } }>, usage?: any }
     let usedModel: string
     let usedH200 = false
-
-    steps.push('Analyzing your request with AI...')
 
     // Try H200 first, fallback to OpenAI
     if (H200_ENABLED) {
@@ -670,72 +683,50 @@ serve(async (req) => {
     // Check if LLM requested a property search
     const { criteria, cleanResponse: afterPropertyParse } = parsePropertySearch(rawResponse)
 
-    // Check if LLM requested a web search
-    const { query: webSearchQuery, cleanResponse: afterWebParse } = parseWebSearch(afterPropertyParse)
+    // Check if LLM requested web searches (supports MULTIPLE searches for agentic behavior)
+    const { queries: webSearchQueries, cleanResponse: afterWebParse } = parseWebSearch(afterPropertyParse)
 
     // Check if LLM requested an email action
     const { emailData, cleanResponse } = parseEmailRequest(afterWebParse)
 
+    // Execute property search
     let properties: any[] = []
     if (criteria) {
-      const searchDesc = criteria.city ? `in ${criteria.city}` : 'in Kentucky'
-      const bedsDesc = criteria.minBeds ? `${criteria.minBeds}+ bedroom ` : ''
-      steps.push(`Searching MLS database for ${bedsDesc}properties ${searchDesc}...`)
-      
       properties = await searchProperties(supabase, criteria)
-      
-      if (properties.length > 0) {
-        steps.push(`Found ${properties.length} listing${properties.length > 1 ? 's' : ''} in The House Team's MLS.`)
-      } else {
-        steps.push(`No matching listings found in The House Team's MLS inventory.`)
-      }
+      console.log(`MLS search returned ${properties.length} properties`)
     }
 
-    let webSearchResults: string | undefined
-    let webLinks: WebLink[] | undefined
-    
-    // Perform web search if requested OR if MLS returned no results (auto-fallback)
-    const shouldDoWebSearch = webSearchQuery || (criteria && properties.length === 0)
-    const actualWebQuery = webSearchQuery || (criteria ? buildFallbackQuery(criteria) : null)
-    
-    if (shouldDoWebSearch && actualWebQuery) {
-      steps.push(`Searching Zillow & Realtor.com for additional listings...`)
-      
-      const searchResult = await webSearch(actualWebQuery)
-      if (searchResult.success) {
-        webSearchResults = searchResult.results
-        webLinks = searchResult.links
-        const linkCount = webLinks?.length || 0
-        steps.push(`Found ${linkCount} result${linkCount !== 1 ? 's' : ''} from web search.`)
-        console.log('Web search completed:', searchResult.source)
-      } else {
-        steps.push('Web search did not return results.')
-      }
+    // Execute ALL web searches in parallel (agentic: multiple searches at once)
+    let webSearchResults: string[] = []
+    if (webSearchQueries.length > 0) {
+      console.log(`Executing ${webSearchQueries.length} web searches...`)
+      const searchPromises = webSearchQueries.map(async (query) => {
+        const result = await webSearch(query)
+        return result.success ? { query, results: result.results, source: result.source } : null
+      })
+
+      const searchResults = await Promise.all(searchPromises)
+      webSearchResults = searchResults
+        .filter((r): r is { query: string; results: string; source?: string } => r !== null)
+        .map(r => `**Search: "${r.query}"** (via ${r.source || 'web'})\n${r.results}`)
+
+      console.log(`Completed ${webSearchResults.length} successful web searches`)
     }
 
+    // Execute email action
     let emailSent = false
     if (emailData) {
-      steps.push('Sending your message to The House Team...')
       const emailResult = await sendEmail(emailData)
       emailSent = emailResult.success
-      if (emailSent) {
-        steps.push('Email sent successfully!')
-      }
       console.log('Email result:', emailResult)
     }
 
-    steps.push('Preparing your results...')
-
     const latencyMs = Date.now() - startTime
 
-    // Build final message - don't append raw web results, let UI handle webLinks
+    // Combine message with web search results if available
     let finalMessage = cleanResponse
-    
-    // If MLS had no results but web search did, add a helpful note
-    if (criteria && properties.length === 0 && webLinks && webLinks.length > 0) {
-      const searchDesc = criteria.city || 'your area'
-      const bedsDesc = criteria.minBeds ? `${criteria.minBeds}-bedroom ` : ''
-      finalMessage = `The House Team doesn't currently have ${bedsDesc}listings in ${searchDesc} in our MLS, but I found some great options from other agents on Zillow and Realtor.com below. Would you like me to schedule a showing for any of these, or would you like to adjust your search criteria?`
+    if (webSearchResults.length > 0) {
+      finalMessage = `${cleanResponse}\n\n**Additional Listings Found Online:**\n\n${webSearchResults.join('\n\n---\n\n')}`
     }
 
     return new Response(
@@ -743,10 +734,9 @@ serve(async (req) => {
         success: true,
         message: finalMessage,
         properties: properties,
-        webLinks: webLinks,
-        steps: steps,
         emailSent: emailSent,
-        webSearchPerformed: shouldDoWebSearch,
+        webSearchCount: webSearchQueries.length,
+        webSearchPerformed: webSearchQueries.length > 0,
         usage: data.usage,
         model: usedModel,
         usedH200: usedH200,
@@ -763,8 +753,7 @@ serve(async (req) => {
       JSON.stringify({
         success: false,
         error: error.message || 'An error occurred processing your request',
-        message: 'I apologize, but I encountered an error. Please try again or contact The House Team directly at (606) 224-3261.',
-        steps: [...steps, 'An error occurred while processing your request.']
+        message: 'I apologize, but I encountered an error. Please try again or contact The House Team directly at (606) 224-3261.'
       }),
       {
         status: 500,
