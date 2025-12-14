@@ -256,7 +256,7 @@ export default function BotPage() {
                 </div>
                 <div>
                   <h1 className="text-lg font-bold text-white">Kentucky Real Estate AI</h1>
-                  <p className="text-xs text-slate-400">Powered by H200 • The House Team</p>
+                  <p className="text-xs text-slate-400">Powered by CCA o1 • The House Team</p>
                 </div>
               </div>
             </div>
@@ -311,7 +311,7 @@ export default function BotPage() {
                   <div className={`flex items-center gap-2 text-xs text-slate-500 mt-1 ${message.role === 'user' ? 'justify-end mr-10' : 'ml-10'}`}>
                     <span>{message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     {message.model && (
-                      <span className="text-amber-500/70">• {message.model.includes('120b') ? 'H200' : 'GPT-4o'}</span>
+                      <span className="text-amber-500/70">• {message.model.includes('120b') ? 'H200' : 'CCA o1'}</span>
                     )}
                   </div>
                 </div>

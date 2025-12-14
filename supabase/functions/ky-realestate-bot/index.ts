@@ -14,7 +14,7 @@ const H200_ENABLED = Deno.env.get('FALLBACK_TO_OPENAI') !== 'true' // If FALLBAC
 // OpenAI Fallback Configuration
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') || ''
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'
-const OPENAI_MODEL = 'gpt-4o'
+const OPENAI_MODEL = 'o1'
 
 // Resend Email Configuration
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || ''
@@ -24,6 +24,10 @@ const FROM_EMAIL = 'bot@houseteamrealtors.com'
 // H200 Browser Automation (Web Search) Configuration
 const H200_BROWSER_URL = Deno.env.get('H200_BROWSER_URL') || 'https://8080-o5l2m2dve.brevlab.com'
 const H200_BROWSER_API_KEY = Deno.env.get('H200_BROWSER_API_KEY') || 'mselwQXUzYI05D2eVTQ5FTUGLEry74IkJEsauLbVn+s='
+
+// Google Search API Configuration (SerpAPI for enterprise-grade search)
+const SERP_API_KEY = Deno.env.get('SERP_API_KEY') || ''
+const GOOGLE_SEARCH_ENABLED = !!SERP_API_KEY
 
 // Supabase Configuration
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
@@ -77,62 +81,61 @@ const KY_KNOWLEDGE = `
 `
 
 // System prompt for the Kentucky Real Estate Bot
-const SYSTEM_PROMPT = `You are a helpful Kentucky Real Estate Assistant for The House Team at Century 21 Advantage Realty.
+const SYSTEM_PROMPT = `You are the Kentucky Real Estate Assistant for The House Team at Century 21 Advantage Realty. You are a professional, knowledgeable AI assistant with REAL capabilities.
 
-Your role is to:
-1. Help users search for properties in Kentucky (especially London, Corbin, Laurel County area)
-2. Answer questions about Kentucky real estate laws, contracts, and the buying/selling process
-3. Provide guidance on negotiations and making offers
-4. Connect users with The House Team agents when they're ready to buy or sell
+## YOUR CAPABILITIES - USE THEM
+You have THREE powerful tools. USE THEM - don't say you can't do something when you CAN:
 
+### 1. [PROPERTY_SEARCH] - REAL MLS Database
+You have DIRECT ACCESS to the Kentucky MLS database with REAL, LIVE listings updated twice daily.
+- This is NOT mock data - these are REAL properties for sale RIGHT NOW
+- Data comes from the official Kentucky MLS system
+- Includes all of Tabitha House's and The House Team's listings
+
+Format: [PROPERTY_SEARCH]{"city":"London","maxPrice":300000}[/PROPERTY_SEARCH]
+Criteria: city, county, minPrice, maxPrice, minBeds, maxBeds, minBaths, minSqft, propertyType, zipCode
+
+### 2. [WEB_SEARCH] - Google Search
+You CAN search the web. When users ask about Zillow, Realtor.com, market data, or anything online - USE THIS.
+NEVER say "I can't search websites" - you CAN and MUST use web search.
+
+Format: [WEB_SEARCH]{"query":"homes for sale Laurel County Kentucky Zillow"}[/WEB_SEARCH]
+
+MANDATORY web search triggers:
+- User mentions "Zillow", "Realtor.com", "Trulia", or any website → IMMEDIATELY use [WEB_SEARCH]
+- User asks for "more listings" or "other agents" → Use [WEB_SEARCH]
+- User asks about current mortgage rates, market trends, school ratings → Use [WEB_SEARCH]
+- User asks "search for" or "look up" anything → Use [WEB_SEARCH]
+
+### 3. [SEND_EMAIL] - Contact The Team
+Format: [SEND_EMAIL]{"type":"showing_request","property_address":"123 Main St","user_message":"..."}[/SEND_EMAIL]
+
+## CRITICAL RULES
+
+1. **NEVER say "I can't access external websites"** - You CAN via [WEB_SEARCH]
+2. **NEVER say "this is mock data"** - The MLS data is REAL
+3. **NEVER say "I don't have access to Zillow"** - Use [WEB_SEARCH] to search Zillow
+4. **When asked about data source**: Say "This data comes directly from the Kentucky MLS system, updated twice daily"
+5. **Be confident and professional** - You are a capable AI assistant with real tools
+
+## RESPONSE EXAMPLES
+
+User: "Search Zillow for homes in London KY"
+You: [WEB_SEARCH]{"query":"homes for sale London KY Zillow"}[/WEB_SEARCH]
+Here's what I found on Zillow for London, KY...
+
+User: "What properties does Tabitha have?"
+You: [PROPERTY_SEARCH]{}[/PROPERTY_SEARCH]
+Here are Tabitha House's current MLS listings...
+
+User: "Is this real data?"
+You: "Yes! This data comes directly from the Kentucky MLS system. These are real, active listings updated twice daily at 7:00 AM and 3:00 PM EST. The House Team's listings are pulled live from the MLS database."
+
+## THE HOUSE TEAM INFO
 ${KY_KNOWLEDGE}
 
-## Response Guidelines
-- Be friendly, professional, and helpful
-- Use markdown formatting for readability
-- When users ask about properties, extract search criteria and query the database
-- Always mention The House Team contact info when appropriate: (606) 224-3261
-- If you don't know something specific, recommend contacting The House Team directly
-- Keep responses concise but informative
-
-## Property Search
-IMPORTANT: When users ask about properties, listings, homes, or real estate - ALWAYS trigger a property search. Don't ask for clarification - just search with whatever criteria they provide. If they don't specify criteria, search all active listings.
-
-Extract these criteria from their message (all are optional):
-- City (London, Manchester, McKee, Oneida - these are the main areas we serve)
-- Price range (min/max)
-- Bedrooms
-- Square footage
-- Property type (SF=Single Family, FA=Farm, UL=Land, BU=Business, OF=Office)
-
-Current active listings include properties in: London, Manchester, McKee, Oneida (Jackson, Clay, and Knox Counties)
-
-ALWAYS format property search requests as JSON in your response using this format:
-[PROPERTY_SEARCH]{"city":"London","maxPrice":300000,"minBeds":3}[/PROPERTY_SEARCH]
-
-To search ALL listings: [PROPERTY_SEARCH]{}[/PROPERTY_SEARCH]
-Available criteria: city, minPrice, maxPrice, minBeds, minSqft, propertyType
-
-After the search tag, provide a natural language response about what you found.
-
-## Email Actions
-When users want to schedule a showing, request more information, or contact the team, use this format:
-[SEND_EMAIL]{"type":"showing_request","property_address":"123 Main St","user_message":"I'd like to schedule a showing"}[/SEND_EMAIL]
-
-Email types: showing_request, property_inquiry, general_contact
-
-## Web Search
-When users ask about current market conditions, interest rates, news, or anything that requires up-to-date information beyond your knowledge, use web search:
-[WEB_SEARCH]{"query":"current mortgage rates Kentucky 2024"}[/WEB_SEARCH]
-
-Use web search for:
-- Current mortgage/interest rates
-- Recent real estate news or market trends
-- Specific neighborhood information
-- Local school ratings or community info
-- Recent sold prices or market statistics
-
-After the search tag, incorporate the search results into your response naturally.`
+Contact: Tabitha House (606) 224-3261 | Dustin House (606) 231-8571
+Office: 911 N Main St, London, KY 40741`
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
@@ -245,38 +248,106 @@ async function searchProperties(supabase: ReturnType<typeof createClient>, crite
   }
 
   // Normalize MLS data to match frontend Property interface
-  const normalizedData = (data || []).map((listing: any) => ({
-    id: listing.id,
-    mls_number: listing.mls_number,
-    address: listing.address,
-    city: listing.city,
-    state: listing.state || 'KY',
-    zip: listing.zip,
-    county: listing.county,
-    price: listing.price,
-    beds: listing.beds,
-    baths_total: listing.baths_total,
-    sqft: listing.living_area,
-    lot_size_acres: listing.lot_size_acres,
-    year_built: listing.year_built,
-    property_type: PROPERTY_TYPE_MAP[listing.property_type] || listing.property_type,
-    status: listing.status,
-    status_note: listing.status_note,
-    description: `${listing.beds ? listing.beds + ' bedroom' : ''} ${PROPERTY_TYPE_MAP[listing.property_type] || listing.property_type} in ${listing.city}, ${listing.county}. ${listing.lot_size_acres ? listing.lot_size_acres + ' acres.' : ''} Listed by ${listing.agent_name}${listing.co_listing_agent ? ' & ' + listing.co_listing_agent : ''} at ${listing.office}.`,
-    listing_agent: listing.agent_name,
-    co_listing_agent: listing.co_listing_agent,
-    listing_office: listing.office,
-    days_on_market: listing.dom,
-    image_urls: []
-  }))
+  const normalizedData = (data || []).map((listing: any) => {
+    // Generate listing URL - use MLS number for direct lookup
+    const mlsUrl = listing.mls_number
+      ? `https://www.century21.com/property/${listing.mls_number}`
+      : null
+    const zillowSearchUrl = `https://www.zillow.com/homes/${encodeURIComponent(listing.address + ' ' + listing.city + ' KY')}_rb/`
+
+    return {
+      id: listing.id,
+      mls_number: listing.mls_number,
+      address: listing.address,
+      city: listing.city,
+      state: listing.state || 'KY',
+      zip: listing.zip,
+      county: listing.county,
+      price: listing.price,
+      beds: listing.beds,
+      baths_total: listing.baths_total,
+      sqft: listing.living_area,
+      lot_size_acres: listing.lot_size_acres,
+      year_built: listing.year_built,
+      property_type: PROPERTY_TYPE_MAP[listing.property_type] || listing.property_type,
+      status: listing.status,
+      status_note: listing.status_note,
+      description: `${listing.beds ? listing.beds + ' bedroom' : ''} ${PROPERTY_TYPE_MAP[listing.property_type] || listing.property_type} in ${listing.city}, ${listing.county}. ${listing.lot_size_acres ? listing.lot_size_acres + ' acres.' : ''} Listed by ${listing.agent_name}${listing.co_listing_agent ? ' & ' + listing.co_listing_agent : ''} at ${listing.office}.`,
+      listing_agent: listing.agent_name,
+      co_listing_agent: listing.co_listing_agent,
+      listing_office: listing.office,
+      days_on_market: listing.dom,
+      image_urls: [],
+      listing_url: mlsUrl,
+      zillow_url: zillowSearchUrl
+    }
+  })
 
   return normalizedData
 }
 
-// Web Search via H200 Browser Automation
+// Google Search via SerpAPI (Enterprise-grade)
+async function googleSearch(query: string): Promise<{ success: boolean; results: string; source: string; links?: Array<{title: string; link: string; snippet: string}> }> {
+  console.log('Starting Google search for:', query)
+
+  try {
+    const searchUrl = `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(query)}&location=Kentucky,United States&hl=en&gl=us&api_key=${SERP_API_KEY}`
+
+    const response = await fetch(searchUrl)
+
+    if (!response.ok) {
+      throw new Error(`SerpAPI error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const organicResults = data.organic_results || []
+    const links: Array<{title: string; link: string; snippet: string}> = []
+
+    let searchResults = ''
+
+    // Process organic results
+    if (organicResults.length > 0) {
+      searchResults = organicResults.slice(0, 8).map((r: any, i: number) => {
+        links.push({ title: r.title, link: r.link, snippet: r.snippet || '' })
+        return `**${i + 1}. ${r.title}**\n${r.snippet || ''}\n🔗 ${r.link}`
+      }).join('\n\n')
+    }
+
+    // Add real estate specific results if available
+    if (data.local_results?.places) {
+      const places = data.local_results.places.slice(0, 3)
+      if (places.length > 0) {
+        searchResults += '\n\n**Local Real Estate Offices:**\n'
+        searchResults += places.map((p: any) => `- ${p.title} (${p.rating}⭐) - ${p.address}`).join('\n')
+      }
+    }
+
+    // Add knowledge graph info if available
+    if (data.knowledge_graph?.description) {
+      searchResults = `**Overview:** ${data.knowledge_graph.description}\n\n${searchResults}`
+    }
+
+    return {
+      success: true,
+      results: searchResults || 'No results found for this query.',
+      source: 'Google',
+      links
+    }
+
+  } catch (error) {
+    console.error('Google search error:', error)
+    return {
+      success: false,
+      results: '',
+      source: 'Google'
+    }
+  }
+}
+
+// Web Search via H200 Browser Automation (Fallback)
 // Uses Puppeteer-based headless browser on H200 Brev instance
-async function webSearch(query: string): Promise<{ success: boolean; results: string; source?: string }> {
-  console.log('Starting web search for:', query)
+async function browserSearch(query: string): Promise<{ success: boolean; results: string; source?: string }> {
+  console.log('Starting browser search for:', query)
 
   try {
     // Create a new browser session
@@ -290,7 +361,7 @@ async function webSearch(query: string): Promise<{ success: boolean; results: st
     })
 
     if (!createResponse.ok) {
-      console.warn('H200 Browser service unavailable, using fallback')
+      console.warn('H200 Browser service unavailable')
       return { success: false, results: 'Web search service temporarily unavailable.' }
     }
 
@@ -298,8 +369,8 @@ async function webSearch(query: string): Promise<{ success: boolean; results: st
     const sessionId = session.sessionId
 
     try {
-      // Navigate to DuckDuckGo (privacy-friendly search)
-      const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query + ' Kentucky real estate')}&ia=web`
+      // Navigate to Google
+      const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`
 
       await fetch(`${H200_BROWSER_URL}/sessions/${sessionId}/navigate`, {
         method: 'POST',
@@ -311,7 +382,7 @@ async function webSearch(query: string): Promise<{ success: boolean; results: st
       })
 
       // Wait for page load
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      await new Promise(resolve => setTimeout(resolve, 2500))
 
       // Extract search results using JavaScript execution
       const extractResponse = await fetch(`${H200_BROWSER_URL}/sessions/${sessionId}/execute`, {
@@ -323,13 +394,17 @@ async function webSearch(query: string): Promise<{ success: boolean; results: st
         body: JSON.stringify({
           script: `
             const results = [];
-            const articles = document.querySelectorAll('article, .result, [data-testid="result"]');
-            articles.forEach((article, i) => {
-              if (i < 5) {
-                const title = article.querySelector('h2, .result__title')?.textContent?.trim() || '';
-                const snippet = article.querySelector('.result__snippet, p')?.textContent?.trim() || '';
-                if (title || snippet) {
-                  results.push({ title, snippet });
+            const items = document.querySelectorAll('.g, [data-sokoban-container]');
+            items.forEach((item, i) => {
+              if (i < 8) {
+                const titleEl = item.querySelector('h3');
+                const snippetEl = item.querySelector('.VwiC3b, [data-sncf]');
+                const linkEl = item.querySelector('a[href^="http"]');
+                const title = titleEl?.textContent?.trim() || '';
+                const snippet = snippetEl?.textContent?.trim() || '';
+                const link = linkEl?.href || '';
+                if (title && snippet) {
+                  results.push({ title, snippet, link });
                 }
               }
             });
@@ -345,8 +420,8 @@ async function webSearch(query: string): Promise<{ success: boolean; results: st
         try {
           const parsed = JSON.parse(extractData.result || '[]')
           if (parsed.length > 0) {
-            searchResults = parsed.map((r: {title: string; snippet: string}) =>
-              `**${r.title}**\n${r.snippet}`
+            searchResults = parsed.map((r: {title: string; snippet: string; link: string}, i: number) =>
+              `**${i + 1}. ${r.title}**\n${r.snippet}${r.link ? `\n🔗 ${r.link}` : ''}`
             ).join('\n\n')
           }
         } catch (e) {
@@ -357,7 +432,7 @@ async function webSearch(query: string): Promise<{ success: boolean; results: st
       return {
         success: true,
         results: searchResults,
-        source: 'DuckDuckGo'
+        source: 'Google (Browser)'
       }
 
     } finally {
@@ -371,12 +446,27 @@ async function webSearch(query: string): Promise<{ success: boolean; results: st
     }
 
   } catch (error) {
-    console.error('Web search error:', error)
+    console.error('Browser search error:', error)
     return {
       success: false,
       results: 'Unable to perform web search at this time. Please contact The House Team directly for current market information.'
     }
   }
+}
+
+// Unified web search function - tries Google API first, falls back to browser
+async function webSearch(query: string): Promise<{ success: boolean; results: string; source?: string }> {
+  // Try SerpAPI (Google) first if configured
+  if (GOOGLE_SEARCH_ENABLED) {
+    const googleResult = await googleSearch(query)
+    if (googleResult.success) {
+      return googleResult
+    }
+    console.warn('Google search failed, falling back to browser search')
+  }
+
+  // Fallback to browser-based search
+  return browserSearch(query)
 }
 
 // Parse web search request from LLM response
