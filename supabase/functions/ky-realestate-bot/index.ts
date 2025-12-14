@@ -6,9 +6,10 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // H200 Self-Hosted Configuration (NVIDIA Brev)
-const H200_API_URL = Deno.env.get('H200_API_URL') || 'https://llm-api-o5l2m2dve.brevlab.com/v1/chat/completions'
+// Uses existing project secrets: H200_LLM_URL, H200_MODEL, FALLBACK_TO_OPENAI
+const H200_API_URL = Deno.env.get('H200_LLM_URL') || Deno.env.get('H200_API_URL') || 'https://llm-api-o5l2m2dve.brevlab.com/v1/chat/completions'
 const H200_MODEL = Deno.env.get('H200_MODEL') || 'gpt-oss-120b'
-const H200_ENABLED = Deno.env.get('H200_ENABLED') !== 'false'
+const H200_ENABLED = Deno.env.get('FALLBACK_TO_OPENAI') !== 'true' // If FALLBACK_TO_OPENAI is true, skip H200
 
 // OpenAI Fallback Configuration
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') || ''
