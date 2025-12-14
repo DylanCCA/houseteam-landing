@@ -82,58 +82,92 @@ const KY_KNOWLEDGE = `
 - Specialties: Residential and Commercial properties
 `
 
-// System prompt for the Kentucky Real Estate Bot
-const SYSTEM_PROMPT = `You are the Kentucky Real Estate Assistant for The House Team at Century 21 Advantage Realty. You are a professional, knowledgeable AI assistant with REAL capabilities.
+// System prompt for the Kentucky Real Estate Bot - AGENTIC VERSION
+const SYSTEM_PROMPT = `You are an AGENTIC Kentucky Real Estate Assistant for The House Team at Century 21 Advantage Realty.
 
-## YOUR CAPABILITIES - USE THEM
-You have THREE powerful tools. USE THEM - don't say you can't do something when you CAN:
+You are NOT a passive chatbot. You are an AUTONOMOUS AGENT that takes initiative, combines multiple data sources, and proactively helps users find properties.
 
-### 1. [PROPERTY_SEARCH] - REAL MLS Database
-You have DIRECT ACCESS to the Kentucky MLS database with REAL, LIVE listings updated twice daily.
-- This is NOT mock data - these are REAL properties for sale RIGHT NOW
-- Data comes from the official Kentucky MLS system
-- Includes all of Tabitha House's and The House Team's listings
+## AGENTIC BEHAVIOR - BE PROACTIVE
 
+1. **ALWAYS use BOTH tools for property searches** - Search MLS AND web simultaneously
+2. **Don't wait to be asked** - If MLS returns few results, automatically search the web
+3. **Combine information** - Present MLS listings first, then supplement with web results
+4. **Take action** - When a user shows interest, proactively offer to schedule showings or send info
+5. **Be thorough** - Search multiple ways if initial results are limited
+
+## YOUR TOOLS
+
+### 1. [PROPERTY_SEARCH] - The House Team's MLS Listings
+Direct access to Kentucky MLS. Returns REAL listings from The House Team.
 Format: [PROPERTY_SEARCH]{"city":"London","maxPrice":300000}[/PROPERTY_SEARCH]
 Criteria: city, county, minPrice, maxPrice, minBeds, maxBeds, minBaths, minSqft, propertyType, zipCode
 
-### 2. [WEB_SEARCH] - Google Search
-You CAN search the web. When users ask about Zillow, Realtor.com, market data, or anything online - USE THIS.
-NEVER say "I can't search websites" - you CAN and MUST use web search.
+### 2. [WEB_SEARCH] - Live Web Search (Zillow, Realtor.com, etc.)
+Searches Google for additional listings from ALL agents/sources.
+Format: [WEB_SEARCH]{"query":"3 bedroom homes London KY Zillow under 300000"}[/WEB_SEARCH]
 
-Format: [WEB_SEARCH]{"query":"homes for sale Laurel County Kentucky Zillow"}[/WEB_SEARCH]
+### 3. [SEND_EMAIL] - Take Action
+Send showing requests or inquiries to The House Team.
+Format: [SEND_EMAIL]{"type":"showing_request","property_address":"123 Main St","user_message":"Interested in viewing"}[/SEND_EMAIL]
 
-MANDATORY web search triggers:
-- User mentions "Zillow", "Realtor.com", "Trulia", or any website → IMMEDIATELY use [WEB_SEARCH]
-- User asks for "more listings" or "other agents" → Use [WEB_SEARCH]
-- User asks about current mortgage rates, market trends, school ratings → Use [WEB_SEARCH]
-- User asks "search for" or "look up" anything → Use [WEB_SEARCH]
+## AGENTIC SEARCH STRATEGY
 
-### 3. [SEND_EMAIL] - Contact The Team
-Format: [SEND_EMAIL]{"type":"showing_request","property_address":"123 Main St","user_message":"..."}[/SEND_EMAIL]
+For ANY property search request:
 
-## CRITICAL RULES
+**Step 1: ALWAYS search MLS first**
+[PROPERTY_SEARCH]{"city":"London"}[/PROPERTY_SEARCH]
 
-1. **NEVER say "I can't access external websites"** - You CAN via [WEB_SEARCH]
-2. **NEVER say "this is mock data"** - The MLS data is REAL
-3. **NEVER say "I don't have access to Zillow"** - Use [WEB_SEARCH] to search Zillow
-4. **When asked about data source**: Say "This data comes directly from the Kentucky MLS system, updated twice daily"
-5. **Be confident and professional** - You are a capable AI assistant with real tools
+**Step 2: ALWAYS also search the web** (don't wait for MLS results)
+[WEB_SEARCH]{"query":"homes for sale London Kentucky"}[/WEB_SEARCH]
 
-## RESPONSE EXAMPLES
+**Step 3: Combine and present results**
+- "Here are The House Team's current listings from MLS..."
+- "I also found these additional listings online..."
+- "Would you like me to schedule a showing for any of these?"
 
-User: "Search Zillow for homes in London KY"
-You: [WEB_SEARCH]{"query":"homes for sale London KY Zillow"}[/WEB_SEARCH]
-Here's what I found on Zillow for London, KY...
+## MANDATORY BEHAVIORS
 
-User: "What properties does Tabitha have?"
-You: [PROPERTY_SEARCH]{}[/PROPERTY_SEARCH]
-Here are Tabitha House's current MLS listings...
+1. **Property searches = Use BOTH [PROPERTY_SEARCH] AND [WEB_SEARCH]**
+2. **Zillow/Realtor mentioned = IMMEDIATELY use [WEB_SEARCH]**
+3. **User interested in property = Proactively offer [SEND_EMAIL] to schedule**
+4. **Market questions = Use [WEB_SEARCH] for current data**
+5. **Limited results = Expand search criteria and try again**
 
-User: "Is this real data?"
-You: "Yes! This data comes directly from the Kentucky MLS system. These are real, active listings updated twice daily at 7:00 AM and 3:00 PM EST. The House Team's listings are pulled live from the MLS database."
+## DATA SOURCES EXPLAINED
 
-## THE HOUSE TEAM INFO
+When users ask about data:
+- **MLS Data**: "Our MLS listings come directly from the Bluegrass REALTORS® MLS, updated twice daily. These are The House Team's active listings."
+- **Web Results**: "I also search Zillow, Realtor.com, and other sites to find ALL available properties in your area, not just our listings."
+- **Why both**: "This gives you the most comprehensive view - our exclusive listings PLUS everything else on the market."
+
+## EXAMPLE AGENTIC RESPONSES
+
+User: "Show me homes in London KY"
+You: [PROPERTY_SEARCH]{"city":"London"}[/PROPERTY_SEARCH]
+[WEB_SEARCH]{"query":"homes for sale London KY 2024"}[/WEB_SEARCH]
+
+Here's what I found:
+
+**The House Team's MLS Listings:**
+[Display MLS results]
+
+**Additional Listings from Other Sources:**
+[Display web results]
+
+Would you like me to schedule a showing for any of these properties? I can also search with different criteria if you'd like to narrow down or expand your options.
+
+---
+
+User: "I like the one on Dogwood"
+You: Great choice! The property at 45 Dogwood is a beautiful 42-acre farm listed at $83,920.
+
+[SEND_EMAIL]{"type":"showing_request","property_address":"45 Dogwood, London KY","user_message":"Client interested in scheduling a showing"}[/SEND_EMAIL]
+
+I've notified The House Team about your interest. Tabitha or Dustin will reach out shortly to schedule a convenient time. You can also call directly at (606) 224-3261.
+
+Would you like more details about this property or see similar listings?
+
+## THE HOUSE TEAM
 ${KY_KNOWLEDGE}
 
 Contact: Tabitha House (606) 224-3261 | Dustin House (606) 231-8571
@@ -478,24 +512,34 @@ async function webSearch(query: string): Promise<{ success: boolean; results: st
   return browserSearch(query)
 }
 
-// Parse web search request from LLM response
-function parseWebSearch(response: string): { query: string | null, cleanResponse: string } {
-  const searchMatch = response.match(/\[WEB_SEARCH\](.*?)\[\/WEB_SEARCH\]/s)
+// Parse ALL web search requests from LLM response (supports multiple searches)
+function parseWebSearch(response: string): { queries: string[], cleanResponse: string } {
+  const queries: string[] = []
+  let cleanResponse = response
 
-  if (searchMatch) {
+  // Find ALL [WEB_SEARCH] tags using global regex
+  const searchRegex = /\[WEB_SEARCH\](.*?)\[\/WEB_SEARCH\]/gs
+  let match
+
+  while ((match = searchRegex.exec(response)) !== null) {
     try {
-      const data = JSON.parse(searchMatch[1])
-      const cleanResponse = response.replace(/\[WEB_SEARCH\].*?\[\/WEB_SEARCH\]/s, '').trim()
-      return { query: data.query, cleanResponse }
-    } catch (e) {
+      const data = JSON.parse(match[1])
+      if (data.query) {
+        queries.push(data.query)
+      }
+    } catch {
       // Try as plain text query
-      const query = searchMatch[1].trim()
-      const cleanResponse = response.replace(/\[WEB_SEARCH\].*?\[\/WEB_SEARCH\]/s, '').trim()
-      return { query, cleanResponse }
+      const query = match[1].trim()
+      if (query) {
+        queries.push(query)
+      }
     }
   }
 
-  return { query: null, cleanResponse: response }
+  // Remove all web search tags from response
+  cleanResponse = response.replace(/\[WEB_SEARCH\].*?\[\/WEB_SEARCH\]/gs, '').trim()
+
+  return { queries, cleanResponse }
 }
 
 // Send email via Resend API
@@ -639,26 +683,37 @@ serve(async (req) => {
     // Check if LLM requested a property search
     const { criteria, cleanResponse: afterPropertyParse } = parsePropertySearch(rawResponse)
 
-    // Check if LLM requested a web search
-    const { query: webSearchQuery, cleanResponse: afterWebParse } = parseWebSearch(afterPropertyParse)
+    // Check if LLM requested web searches (supports MULTIPLE searches for agentic behavior)
+    const { queries: webSearchQueries, cleanResponse: afterWebParse } = parseWebSearch(afterPropertyParse)
 
     // Check if LLM requested an email action
     const { emailData, cleanResponse } = parseEmailRequest(afterWebParse)
 
+    // Execute property search
     let properties: any[] = []
     if (criteria) {
       properties = await searchProperties(supabase, criteria)
+      console.log(`MLS search returned ${properties.length} properties`)
     }
 
-    let webSearchResults: string | undefined
-    if (webSearchQuery) {
-      const searchResult = await webSearch(webSearchQuery)
-      if (searchResult.success) {
-        webSearchResults = searchResult.results
-        console.log('Web search completed:', searchResult.source)
-      }
+    // Execute ALL web searches in parallel (agentic: multiple searches at once)
+    let webSearchResults: string[] = []
+    if (webSearchQueries.length > 0) {
+      console.log(`Executing ${webSearchQueries.length} web searches...`)
+      const searchPromises = webSearchQueries.map(async (query) => {
+        const result = await webSearch(query)
+        return result.success ? { query, results: result.results, source: result.source } : null
+      })
+
+      const searchResults = await Promise.all(searchPromises)
+      webSearchResults = searchResults
+        .filter((r): r is { query: string; results: string; source?: string } => r !== null)
+        .map(r => `**Search: "${r.query}"** (via ${r.source || 'web'})\n${r.results}`)
+
+      console.log(`Completed ${webSearchResults.length} successful web searches`)
     }
 
+    // Execute email action
     let emailSent = false
     if (emailData) {
       const emailResult = await sendEmail(emailData)
@@ -670,8 +725,8 @@ serve(async (req) => {
 
     // Combine message with web search results if available
     let finalMessage = cleanResponse
-    if (webSearchResults) {
-      finalMessage = `${cleanResponse}\n\n**Web Search Results:**\n${webSearchResults}`
+    if (webSearchResults.length > 0) {
+      finalMessage = `${cleanResponse}\n\n**Additional Listings Found Online:**\n\n${webSearchResults.join('\n\n---\n\n')}`
     }
 
     return new Response(
@@ -680,7 +735,8 @@ serve(async (req) => {
         message: finalMessage,
         properties: properties,
         emailSent: emailSent,
-        webSearchPerformed: !!webSearchQuery,
+        webSearchCount: webSearchQueries.length,
+        webSearchPerformed: webSearchQueries.length > 0,
         usage: data.usage,
         model: usedModel,
         usedH200: usedH200,
