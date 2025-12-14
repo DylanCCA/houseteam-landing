@@ -21,6 +21,10 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || ''
 const TEAM_EMAIL = 'thouse@century21advantage.com'
 const FROM_EMAIL = 'bot@houseteamrealtors.com'
 
+// H200 Browser Automation (Web Search) Configuration
+const H200_BROWSER_URL = Deno.env.get('H200_BROWSER_URL') || 'https://8080-o5l2m2dve.brevlab.com'
+const H200_BROWSER_API_KEY = Deno.env.get('H200_BROWSER_API_KEY') || 'mselwQXUzYI05D2eVTQ5FTUGLEry74IkJEsauLbVn+s='
+
 // Supabase Configuration
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
@@ -115,7 +119,20 @@ After the search tag, provide a natural language response about what you found.
 When users want to schedule a showing, request more information, or contact the team, use this format:
 [SEND_EMAIL]{"type":"showing_request","property_address":"123 Main St","user_message":"I'd like to schedule a showing"}[/SEND_EMAIL]
 
-Email types: showing_request, property_inquiry, general_contact`
+Email types: showing_request, property_inquiry, general_contact
+
+## Web Search
+When users ask about current market conditions, interest rates, news, or anything that requires up-to-date information beyond your knowledge, use web search:
+[WEB_SEARCH]{"query":"current mortgage rates Kentucky 2024"}[/WEB_SEARCH]
+
+Use web search for:
+- Current mortgage/interest rates
+- Recent real estate news or market trends
+- Specific neighborhood information
+- Local school ratings or community info
+- Recent sold prices or market statistics
+
+After the search tag, incorporate the search results into your response naturally.`
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
@@ -254,6 +271,132 @@ async function searchProperties(supabase: ReturnType<typeof createClient>, crite
   }))
 
   return normalizedData
+}
+
+// Web Search via H200 Browser Automation
+// Uses Puppeteer-based headless browser on H200 Brev instance
+async function webSearch(query: string): Promise<{ success: boolean; results: string; source?: string }> {
+  console.log('Starting web search for:', query)
+
+  try {
+    // Create a new browser session
+    const createResponse = await fetch(`${H200_BROWSER_URL}/sessions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${H200_BROWSER_API_KEY}`
+      },
+      body: JSON.stringify({})
+    })
+
+    if (!createResponse.ok) {
+      console.warn('H200 Browser service unavailable, using fallback')
+      return { success: false, results: 'Web search service temporarily unavailable.' }
+    }
+
+    const session = await createResponse.json()
+    const sessionId = session.sessionId
+
+    try {
+      // Navigate to DuckDuckGo (privacy-friendly search)
+      const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query + ' Kentucky real estate')}&ia=web`
+
+      await fetch(`${H200_BROWSER_URL}/sessions/${sessionId}/navigate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${H200_BROWSER_API_KEY}`
+        },
+        body: JSON.stringify({ url: searchUrl })
+      })
+
+      // Wait for page load
+      await new Promise(resolve => setTimeout(resolve, 2000))
+
+      // Extract search results using JavaScript execution
+      const extractResponse = await fetch(`${H200_BROWSER_URL}/sessions/${sessionId}/execute`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${H200_BROWSER_API_KEY}`
+        },
+        body: JSON.stringify({
+          script: `
+            const results = [];
+            const articles = document.querySelectorAll('article, .result, [data-testid="result"]');
+            articles.forEach((article, i) => {
+              if (i < 5) {
+                const title = article.querySelector('h2, .result__title')?.textContent?.trim() || '';
+                const snippet = article.querySelector('.result__snippet, p')?.textContent?.trim() || '';
+                if (title || snippet) {
+                  results.push({ title, snippet });
+                }
+              }
+            });
+            return JSON.stringify(results);
+          `
+        })
+      })
+
+      let searchResults = 'No results found.'
+
+      if (extractResponse.ok) {
+        const extractData = await extractResponse.json()
+        try {
+          const parsed = JSON.parse(extractData.result || '[]')
+          if (parsed.length > 0) {
+            searchResults = parsed.map((r: {title: string; snippet: string}) =>
+              `**${r.title}**\n${r.snippet}`
+            ).join('\n\n')
+          }
+        } catch (e) {
+          console.error('Failed to parse search results:', e)
+        }
+      }
+
+      return {
+        success: true,
+        results: searchResults,
+        source: 'DuckDuckGo'
+      }
+
+    } finally {
+      // Always clean up the session
+      await fetch(`${H200_BROWSER_URL}/sessions/${sessionId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${H200_BROWSER_API_KEY}`
+        }
+      }).catch(() => {})
+    }
+
+  } catch (error) {
+    console.error('Web search error:', error)
+    return {
+      success: false,
+      results: 'Unable to perform web search at this time. Please contact The House Team directly for current market information.'
+    }
+  }
+}
+
+// Parse web search request from LLM response
+function parseWebSearch(response: string): { query: string | null, cleanResponse: string } {
+  const searchMatch = response.match(/\[WEB_SEARCH\](.*?)\[\/WEB_SEARCH\]/s)
+
+  if (searchMatch) {
+    try {
+      const data = JSON.parse(searchMatch[1])
+      const cleanResponse = response.replace(/\[WEB_SEARCH\].*?\[\/WEB_SEARCH\]/s, '').trim()
+      return { query: data.query, cleanResponse }
+    } catch (e) {
+      // Try as plain text query
+      const query = searchMatch[1].trim()
+      const cleanResponse = response.replace(/\[WEB_SEARCH\].*?\[\/WEB_SEARCH\]/s, '').trim()
+      return { query, cleanResponse }
+    }
+  }
+
+  return { query: null, cleanResponse: response }
 }
 
 // Send email via Resend API
@@ -397,12 +540,24 @@ serve(async (req) => {
     // Check if LLM requested a property search
     const { criteria, cleanResponse: afterPropertyParse } = parsePropertySearch(rawResponse)
 
+    // Check if LLM requested a web search
+    const { query: webSearchQuery, cleanResponse: afterWebParse } = parseWebSearch(afterPropertyParse)
+
     // Check if LLM requested an email action
-    const { emailData, cleanResponse } = parseEmailRequest(afterPropertyParse)
+    const { emailData, cleanResponse } = parseEmailRequest(afterWebParse)
 
     let properties: any[] = []
     if (criteria) {
       properties = await searchProperties(supabase, criteria)
+    }
+
+    let webSearchResults: string | undefined
+    if (webSearchQuery) {
+      const searchResult = await webSearch(webSearchQuery)
+      if (searchResult.success) {
+        webSearchResults = searchResult.results
+        console.log('Web search completed:', searchResult.source)
+      }
     }
 
     let emailSent = false
@@ -414,12 +569,19 @@ serve(async (req) => {
 
     const latencyMs = Date.now() - startTime
 
+    // Combine message with web search results if available
+    let finalMessage = cleanResponse
+    if (webSearchResults) {
+      finalMessage = `${cleanResponse}\n\n**Web Search Results:**\n${webSearchResults}`
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
-        message: cleanResponse,
+        message: finalMessage,
         properties: properties,
         emailSent: emailSent,
+        webSearchPerformed: !!webSearchQuery,
         usage: data.usage,
         model: usedModel,
         usedH200: usedH200,
