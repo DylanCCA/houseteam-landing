@@ -171,19 +171,32 @@ async function callH200(messages: ChatMessage[], maxTokens: number, temperature:
 }
 
 // Call OpenAI as fallback
+// Note: o1 models don't support temperature parameter and use max_completion_tokens
 async function callOpenAI(messages: ChatMessage[], maxTokens: number, temperature: number) {
+  // o1 models require different parameters
+  const isO1Model = OPENAI_MODEL.startsWith('o1')
+  
+  const requestBody: any = {
+    model: OPENAI_MODEL,
+    messages: messages,
+  }
+  
+  if (isO1Model) {
+    // o1 models use max_completion_tokens and don't support temperature
+    requestBody.max_completion_tokens = maxTokens
+  } else {
+    // Standard models use max_tokens and temperature
+    requestBody.max_tokens = maxTokens
+    requestBody.temperature = temperature
+  }
+  
   const response = await fetch(OPENAI_API_URL, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${OPENAI_API_KEY}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      model: OPENAI_MODEL,
-      messages: messages,
-      max_tokens: maxTokens,
-      temperature: temperature,
-    }),
+    body: JSON.stringify(requestBody),
   })
 
   if (!response.ok) {
