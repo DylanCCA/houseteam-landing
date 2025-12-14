@@ -14,7 +14,7 @@ const H200_ENABLED = Deno.env.get('FALLBACK_TO_OPENAI') !== 'true' // If FALLBAC
 // OpenAI Fallback Configuration
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') || ''
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'
-const OPENAI_MODEL = 'gpt-4o'
+const OPENAI_MODEL = 'o1'
 
 // Resend Email Configuration
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || ''
@@ -24,6 +24,12 @@ const FROM_EMAIL = 'bot@houseteamrealtors.com'
 // H200 Browser Automation (Web Search) Configuration
 const H200_BROWSER_URL = Deno.env.get('H200_BROWSER_URL') || 'https://8080-o5l2m2dve.brevlab.com'
 const H200_BROWSER_API_KEY = Deno.env.get('H200_BROWSER_API_KEY') || 'mselwQXUzYI05D2eVTQ5FTUGLEry74IkJEsauLbVn+s='
+
+// Google Custom Search API Configuration (uses existing GOOGLE_API_KEY)
+// Requires a Custom Search Engine ID - create at: https://programmablesearchengine.google.com/
+const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY') || ''
+const GOOGLE_CSE_ID = Deno.env.get('GOOGLE_CSE_ID') || '017576662512468239146:omuauf_lfve' // Default: Google's web search CSE
+const GOOGLE_SEARCH_ENABLED = !!GOOGLE_API_KEY
 
 // Supabase Configuration
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
@@ -77,77 +83,59 @@ const KY_KNOWLEDGE = `
 `
 
 // System prompt for the Kentucky Real Estate Bot
-const SYSTEM_PROMPT = `You are a helpful Kentucky Real Estate Assistant for The House Team at Century 21 Advantage Realty.
+const SYSTEM_PROMPT = `You are the Kentucky Real Estate Assistant for The House Team at Century 21 Advantage Realty. You are a professional, knowledgeable AI assistant with REAL capabilities.
 
-Your role is to:
-1. Help users search for properties in Kentucky (especially London, Corbin, Laurel County area)
-2. Answer questions about Kentucky real estate laws, contracts, and the buying/selling process
-3. Provide guidance on negotiations and making offers
-4. Connect users with The House Team agents when they're ready to buy or sell
+## YOUR CAPABILITIES - USE THEM TOGETHER
+You have THREE powerful tools. For property searches, USE BOTH MLS AND WEB SEARCH together to give comprehensive results:
 
+### 1. [PROPERTY_SEARCH] - REAL MLS Database
+Direct access to Kentucky MLS with REAL, LIVE listings from The House Team.
+Format: [PROPERTY_SEARCH]{"city":"London","maxPrice":300000,"minBeds":3}[/PROPERTY_SEARCH]
+Criteria: city, county, minPrice, maxPrice, minBeds, maxBeds, minBaths, minSqft, propertyType, zipCode
+
+### 2. [WEB_SEARCH] - Google Search for Zillow/Realtor.com
+Search external sites for additional listings from other agents.
+Format: [WEB_SEARCH]{"query":"4 bedroom homes for sale London KY site:zillow.com"}[/WEB_SEARCH]
+
+### 3. [SEND_EMAIL] - Contact The Team
+Format: [SEND_EMAIL]{"type":"showing_request","property_address":"123 Main St","user_message":"..."}[/SEND_EMAIL]
+
+## AGENTIC BEHAVIOR - ALWAYS DO BOTH SEARCHES
+When a user asks for properties, ALWAYS use BOTH tools together:
+1. Use [PROPERTY_SEARCH] to get The House Team's MLS listings
+2. Use [WEB_SEARCH] to find additional listings from Zillow/Realtor.com
+
+Example for "Show me 4 bedroom homes in London KY":
+[PROPERTY_SEARCH]{"city":"London","minBeds":4}[/PROPERTY_SEARCH]
+[WEB_SEARCH]{"query":"4 bedroom homes for sale London KY site:zillow.com OR site:realtor.com"}[/WEB_SEARCH]
+
+## CRITICAL RESPONSE RULES
+
+1. **DO NOT write placeholder text** - Never write "(MLS results would appear here)" or "(Web search results would appear here)" or similar placeholders. The backend attaches real results automatically.
+
+2. **Write a brief summary** - After using the tools, write a SHORT summary like:
+   - "Here are homes matching your criteria from The House Team's MLS listings, plus additional options from Zillow and Realtor.com."
+   - "I found several properties that match. Would you like me to schedule a showing?"
+
+3. **Be proactive** - Always offer to:
+   - Schedule a showing
+   - Refine the search (price, beds, location)
+   - Send more details via email
+
+4. **When MLS has no matches** - Say something like:
+   - "The House Team doesn't currently have [X] listings in [location], but I found some great options from other agents on Zillow."
+
+## RESPONSE FORMAT
+Keep responses SHORT and action-oriented. The property cards and web links will be displayed automatically by the system. Your job is to:
+1. Use the tools
+2. Write a brief, helpful summary (2-3 sentences max)
+3. Offer next steps
+
+## THE HOUSE TEAM INFO
 ${KY_KNOWLEDGE}
 
-## Response Guidelines
-- Be friendly, professional, and helpful
-- Use markdown formatting for readability
-- Always mention The House Team contact info when appropriate: (606) 224-3261
-- If you don't know something specific, recommend contacting The House Team directly
-- Keep responses concise but informative
-
-## Property Search (CRITICAL - YOU MUST FOLLOW THIS)
-
-You CANNOT access MLS data directly. The ONLY way to retrieve listings is by emitting a PROPERTY_SEARCH tag.
-
-**RULE: When the user asks about homes, properties, listings, houses, real estate for sale, or mentions ANY price range or city - you MUST output a PROPERTY_SEARCH tag FIRST, before any other text.**
-
-Format (must be on its own line, valid JSON):
-[PROPERTY_SEARCH]{"city":"London","minPrice":200000,"maxPrice":450000}[/PROPERTY_SEARCH]
-
-Available criteria: city, minPrice, maxPrice, minBeds, minSqft, propertyType (SF, FA, UL, BU, OF)
-Cities we serve: London, Manchester, McKee, Oneida
-
-**If you do NOT output a PROPERTY_SEARCH tag, the user will see ZERO listings.**
-**Do NOT describe or invent properties yourself - listings come ONLY from the database via this tag.**
-
-Example 1:
-User: "Show me homes in London under $100,000"
-Your response:
-[PROPERTY_SEARCH]{"city":"London","maxPrice":100000}[/PROPERTY_SEARCH]
-
-I'm searching for homes in London, KY under $100,000. Here's what I found in our MLS database.
-
-Example 2:
-User: "List all listings in london ky. 200k-450k residential"
-Your response:
-[PROPERTY_SEARCH]{"city":"London","minPrice":200000,"maxPrice":450000,"propertyType":"SF"}[/PROPERTY_SEARCH]
-
-I'm searching for residential properties in London, KY between $200,000 and $450,000.
-
-Example 3:
-User: "What properties do you have?"
-Your response:
-[PROPERTY_SEARCH]{}[/PROPERTY_SEARCH]
-
-Let me show you all our current active listings.
-
-## Email Actions
-When users want to schedule a showing, request more information, or contact the team, use this format:
-[SEND_EMAIL]{"type":"showing_request","property_address":"123 Main St","user_message":"I'd like to schedule a showing"}[/SEND_EMAIL]
-
-Email types: showing_request, property_inquiry, general_contact
-
-## Web Search
-When users ask about current market conditions, interest rates, news, or anything that requires up-to-date information beyond your knowledge, use web search:
-[WEB_SEARCH]{"query":"current mortgage rates Kentucky 2024"}[/WEB_SEARCH]
-
-Use web search for:
-- Current mortgage/interest rates
-- Recent real estate news or market trends
-- Specific neighborhood information
-- Local school ratings or community info
-- Recent sold prices or market statistics
-
-After the search tag, incorporate the search results into your response naturally.`
+Contact: Tabitha House (606) 224-3261 | Dustin House (606) 231-8571
+Office: 911 N Main St, London, KY 40741`
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
@@ -181,19 +169,32 @@ async function callH200(messages: ChatMessage[], maxTokens: number, temperature:
 }
 
 // Call OpenAI as fallback
+// Note: o1 models use max_completion_tokens and don't support temperature
 async function callOpenAI(messages: ChatMessage[], maxTokens: number, temperature: number) {
+  const isO1Model = OPENAI_MODEL.startsWith('o1')
+
+  // Build request body based on model type
+  const requestBody: Record<string, unknown> = {
+    model: OPENAI_MODEL,
+    messages: messages,
+  }
+
+  if (isO1Model) {
+    // o1 models use max_completion_tokens and don't support temperature
+    requestBody.max_completion_tokens = maxTokens
+  } else {
+    // Standard models use max_tokens and temperature
+    requestBody.max_tokens = maxTokens
+    requestBody.temperature = temperature
+  }
+
   const response = await fetch(OPENAI_API_URL, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${OPENAI_API_KEY}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      model: OPENAI_MODEL,
-      messages: messages,
-      max_tokens: maxTokens,
-      temperature: temperature,
-    }),
+    body: JSON.stringify(requestBody),
   })
 
   if (!response.ok) {
@@ -260,38 +261,100 @@ async function searchProperties(supabase: ReturnType<typeof createClient>, crite
   }
 
   // Normalize MLS data to match frontend Property interface
-  const normalizedData = (data || []).map((listing: any) => ({
-    id: listing.id,
-    mls_number: listing.mls_number,
-    address: listing.address,
-    city: listing.city,
-    state: listing.state || 'KY',
-    zip: listing.zip,
-    county: listing.county,
-    price: listing.price,
-    beds: listing.beds,
-    baths_total: listing.baths_total,
-    sqft: listing.living_area,
-    lot_size_acres: listing.lot_size_acres,
-    year_built: listing.year_built,
-    property_type: PROPERTY_TYPE_MAP[listing.property_type] || listing.property_type,
-    status: listing.status,
-    status_note: listing.status_note,
-    description: `${listing.beds ? listing.beds + ' bedroom' : ''} ${PROPERTY_TYPE_MAP[listing.property_type] || listing.property_type} in ${listing.city}, ${listing.county}. ${listing.lot_size_acres ? listing.lot_size_acres + ' acres.' : ''} Listed by ${listing.agent_name}${listing.co_listing_agent ? ' & ' + listing.co_listing_agent : ''} at ${listing.office}.`,
-    listing_agent: listing.agent_name,
-    co_listing_agent: listing.co_listing_agent,
-    listing_office: listing.office,
-    days_on_market: listing.dom,
-    image_urls: []
-  }))
+  const normalizedData = (data || []).map((listing: any) => {
+    // Generate listing URL - use MLS number for direct lookup
+    const mlsUrl = listing.mls_number
+      ? `https://www.century21.com/property/${listing.mls_number}`
+      : null
+    const zillowSearchUrl = `https://www.zillow.com/homes/${encodeURIComponent(listing.address + ' ' + listing.city + ' KY')}_rb/`
+
+    return {
+      id: listing.id,
+      mls_number: listing.mls_number,
+      address: listing.address,
+      city: listing.city,
+      state: listing.state || 'KY',
+      zip: listing.zip,
+      county: listing.county,
+      price: listing.price,
+      beds: listing.beds,
+      baths_total: listing.baths_total,
+      sqft: listing.living_area,
+      lot_size_acres: listing.lot_size_acres,
+      year_built: listing.year_built,
+      property_type: PROPERTY_TYPE_MAP[listing.property_type] || listing.property_type,
+      status: listing.status,
+      status_note: listing.status_note,
+      description: `${listing.beds ? listing.beds + ' bedroom' : ''} ${PROPERTY_TYPE_MAP[listing.property_type] || listing.property_type} in ${listing.city}, ${listing.county}. ${listing.lot_size_acres ? listing.lot_size_acres + ' acres.' : ''} Listed by ${listing.agent_name}${listing.co_listing_agent ? ' & ' + listing.co_listing_agent : ''} at ${listing.office}.`,
+      listing_agent: listing.agent_name,
+      co_listing_agent: listing.co_listing_agent,
+      listing_office: listing.office,
+      days_on_market: listing.dom,
+      image_urls: [],
+      listing_url: mlsUrl,
+      zillow_url: zillowSearchUrl
+    }
+  })
 
   return normalizedData
 }
 
-// Web Search via H200 Browser Automation
+// Google Custom Search API (Enterprise-grade, uses existing GOOGLE_API_KEY)
+async function googleSearch(query: string): Promise<{ success: boolean; results: string; source: string; links?: Array<{title: string; link: string; snippet: string}> }> {
+  console.log('Starting Google Custom Search for:', query)
+
+  try {
+    // Google Custom Search JSON API
+    const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CSE_ID}&q=${encodeURIComponent(query + ' Kentucky real estate')}&num=10`
+
+    const response = await fetch(searchUrl)
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Google CSE error:', response.status, errorText)
+      throw new Error(`Google CSE error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const items = data.items || []
+    const links: Array<{title: string; link: string; snippet: string}> = []
+
+    let searchResults = ''
+
+    // Process search results
+    if (items.length > 0) {
+      searchResults = items.slice(0, 8).map((r: any, i: number) => {
+        links.push({ title: r.title, link: r.link, snippet: r.snippet || '' })
+        return `**${i + 1}. ${r.title}**\n${r.snippet || ''}\n🔗 ${r.link}`
+      }).join('\n\n')
+    }
+
+    // Add search information if available
+    if (data.searchInformation?.formattedTotalResults) {
+      searchResults = `**Found approximately ${data.searchInformation.formattedTotalResults} results**\n\n${searchResults}`
+    }
+
+    return {
+      success: true,
+      results: searchResults || 'No results found for this query.',
+      source: 'Google',
+      links
+    }
+
+  } catch (error) {
+    console.error('Google search error:', error)
+    return {
+      success: false,
+      results: '',
+      source: 'Google'
+    }
+  }
+}
+
+// Web Search via H200 Browser Automation (Fallback)
 // Uses Puppeteer-based headless browser on H200 Brev instance
-async function webSearch(query: string): Promise<{ success: boolean; results: string; source?: string }> {
-  console.log('Starting web search for:', query)
+async function browserSearch(query: string): Promise<{ success: boolean; results: string; source?: string }> {
+  console.log('Starting browser search for:', query)
 
   try {
     // Create a new browser session
@@ -305,7 +368,7 @@ async function webSearch(query: string): Promise<{ success: boolean; results: st
     })
 
     if (!createResponse.ok) {
-      console.warn('H200 Browser service unavailable, using fallback')
+      console.warn('H200 Browser service unavailable')
       return { success: false, results: 'Web search service temporarily unavailable.' }
     }
 
@@ -313,8 +376,8 @@ async function webSearch(query: string): Promise<{ success: boolean; results: st
     const sessionId = session.sessionId
 
     try {
-      // Navigate to DuckDuckGo (privacy-friendly search)
-      const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query + ' Kentucky real estate')}&ia=web`
+      // Navigate to Google
+      const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`
 
       await fetch(`${H200_BROWSER_URL}/sessions/${sessionId}/navigate`, {
         method: 'POST',
@@ -326,7 +389,7 @@ async function webSearch(query: string): Promise<{ success: boolean; results: st
       })
 
       // Wait for page load
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      await new Promise(resolve => setTimeout(resolve, 2500))
 
       // Extract search results using JavaScript execution
       const extractResponse = await fetch(`${H200_BROWSER_URL}/sessions/${sessionId}/execute`, {
@@ -338,13 +401,17 @@ async function webSearch(query: string): Promise<{ success: boolean; results: st
         body: JSON.stringify({
           script: `
             const results = [];
-            const articles = document.querySelectorAll('article, .result, [data-testid="result"]');
-            articles.forEach((article, i) => {
-              if (i < 5) {
-                const title = article.querySelector('h2, .result__title')?.textContent?.trim() || '';
-                const snippet = article.querySelector('.result__snippet, p')?.textContent?.trim() || '';
-                if (title || snippet) {
-                  results.push({ title, snippet });
+            const items = document.querySelectorAll('.g, [data-sokoban-container]');
+            items.forEach((item, i) => {
+              if (i < 8) {
+                const titleEl = item.querySelector('h3');
+                const snippetEl = item.querySelector('.VwiC3b, [data-sncf]');
+                const linkEl = item.querySelector('a[href^="http"]');
+                const title = titleEl?.textContent?.trim() || '';
+                const snippet = snippetEl?.textContent?.trim() || '';
+                const link = linkEl?.href || '';
+                if (title && snippet) {
+                  results.push({ title, snippet, link });
                 }
               }
             });
@@ -360,8 +427,8 @@ async function webSearch(query: string): Promise<{ success: boolean; results: st
         try {
           const parsed = JSON.parse(extractData.result || '[]')
           if (parsed.length > 0) {
-            searchResults = parsed.map((r: {title: string; snippet: string}) =>
-              `**${r.title}**\n${r.snippet}`
+            searchResults = parsed.map((r: {title: string; snippet: string; link: string}, i: number) =>
+              `**${i + 1}. ${r.title}**\n${r.snippet}${r.link ? `\n🔗 ${r.link}` : ''}`
             ).join('\n\n')
           }
         } catch (e) {
@@ -372,7 +439,7 @@ async function webSearch(query: string): Promise<{ success: boolean; results: st
       return {
         success: true,
         results: searchResults,
-        source: 'DuckDuckGo'
+        source: 'Google (Browser)'
       }
 
     } finally {
@@ -386,12 +453,40 @@ async function webSearch(query: string): Promise<{ success: boolean; results: st
     }
 
   } catch (error) {
-    console.error('Web search error:', error)
+    console.error('Browser search error:', error)
     return {
       success: false,
       results: 'Unable to perform web search at this time. Please contact The House Team directly for current market information.'
     }
   }
+}
+
+// Web link type for structured results
+interface WebLink {
+  title: string
+  link: string
+  snippet: string
+  source?: string
+}
+
+// Unified web search function - tries Google API first, falls back to browser
+async function webSearch(query: string): Promise<{ success: boolean; results: string; source?: string; links?: WebLink[] }> {
+  // Try Google Custom Search API first if configured
+  if (GOOGLE_SEARCH_ENABLED) {
+    const googleResult = await googleSearch(query)
+    if (googleResult.success) {
+      return {
+        success: true,
+        results: googleResult.results,
+        source: googleResult.source,
+        links: googleResult.links
+      }
+    }
+    console.warn('Google search failed, falling back to browser search')
+  }
+
+  // Fallback to browser-based search (no structured links)
+  return browserSearch(query)
 }
 
 // Parse web search request from LLM response
@@ -508,127 +603,16 @@ function parseEmailRequest(response: string): { emailData: any | null, cleanResp
   return { emailData: null, cleanResponse: response }
 }
 
-// Fallback: Detect property queries from user message and extract criteria
-// This runs when the LLM forgets to use the PROPERTY_SEARCH tag
-function detectPropertyQuery(userMessage: string): { isPropertyQuery: boolean, criteria: any } {
-  const msg = userMessage.toLowerCase()
-  
-  // Keywords that indicate a property search
-  const propertyKeywords = [
-    'listing', 'listings', 'home', 'homes', 'house', 'houses', 'property', 'properties',
-    'for sale', 'available', 'show me', 'find me', 'search for', 'looking for',
-    'bedroom', 'bed', 'bath', 'sqft', 'square feet', 'acres', 'land', 'farm',
-    'residential', 'commercial', 'what do you have', 'what\'s available'
-  ]
-  
-  // Cities we serve
-  const cities = ['london', 'manchester', 'mckee', 'oneida', 'corbin', 'laurel']
-  
-  // Check if this looks like a property query
-  const hasPropertyKeyword = propertyKeywords.some(kw => msg.includes(kw))
-  const hasCity = cities.some(city => msg.includes(city))
-  const hasPricePattern = /\$?\d+[k,]?\s*[-–to]\s*\$?\d+[k]?|\$\d+|under\s+\$?\d+|over\s+\$?\d+|\d+k/i.test(msg)
-  
-  const isPropertyQuery = hasPropertyKeyword || (hasCity && hasPricePattern)
-  
-  if (!isPropertyQuery) {
-    return { isPropertyQuery: false, criteria: null }
-  }
-  
-  // Extract criteria from the message
-  const criteria: any = {}
-  
-  // Extract city
-  for (const city of cities) {
-    if (msg.includes(city)) {
-      criteria.city = city.charAt(0).toUpperCase() + city.slice(1)
-      break
-    }
-  }
-  
-  // Extract price range - handle formats like "200k-450k", "$200,000 to $450,000", "under $300k"
-  const priceRangeMatch = msg.match(/(\d+)[k,]*\s*[-–to]+\s*(\d+)[k]*/i)
-  if (priceRangeMatch) {
-    let min = parseInt(priceRangeMatch[1])
-    let max = parseInt(priceRangeMatch[2])
-    // Handle "k" notation
-    if (min < 10000) min *= 1000
-    if (max < 10000) max *= 1000
-    criteria.minPrice = min
-    criteria.maxPrice = max
-  } else {
-    // Check for "under X" or "below X"
-    const underMatch = msg.match(/(?:under|below|less than|max)\s*\$?(\d+)[k,]*/i)
-    if (underMatch) {
-      let max = parseInt(underMatch[1])
-      if (max < 10000) max *= 1000
-      criteria.maxPrice = max
-    }
-    // Check for "over X" or "above X"
-    const overMatch = msg.match(/(?:over|above|more than|min|at least)\s*\$?(\d+)[k,]*/i)
-    if (overMatch) {
-      let min = parseInt(overMatch[1])
-      if (min < 10000) min *= 1000
-      criteria.minPrice = min
-    }
-  }
-  
-  // Extract bedrooms
-  const bedsMatch = msg.match(/(\d+)\s*(?:bed|bedroom|br)/i)
-  if (bedsMatch) {
-    criteria.minBeds = parseInt(bedsMatch[1])
-  }
-  
-  // Extract property type
-  if (msg.includes('residential') || msg.includes('single family')) {
-    criteria.propertyType = 'SF'
-  } else if (msg.includes('farm')) {
-    criteria.propertyType = 'FA'
-  } else if (msg.includes('land')) {
-    criteria.propertyType = 'UL'
-  } else if (msg.includes('commercial') || msg.includes('business')) {
-    criteria.propertyType = 'BU'
-  }
-  
-  console.log('Fallback property detection:', { userMessage: msg.substring(0, 100), isPropertyQuery, criteria })
-  
-  return { isPropertyQuery, criteria }
-}
-
-// Generate a helpful "no results" message
-function generateNoResultsMessage(criteria: any): string {
+// Build a fallback web search query from property criteria
+function buildFallbackQuery(criteria: any): string {
   const parts: string[] = []
-  
-  if (criteria.city) {
-    parts.push(`in ${criteria.city}, KY`)
-  }
-  
-  if (criteria.minPrice && criteria.maxPrice) {
-    parts.push(`between $${criteria.minPrice.toLocaleString()} and $${criteria.maxPrice.toLocaleString()}`)
-  } else if (criteria.maxPrice) {
-    parts.push(`under $${criteria.maxPrice.toLocaleString()}`)
-  } else if (criteria.minPrice) {
-    parts.push(`over $${criteria.minPrice.toLocaleString()}`)
-  }
-  
-  if (criteria.minBeds) {
-    parts.push(`with ${criteria.minBeds}+ bedrooms`)
-  }
-  
-  const criteriaDesc = parts.length > 0 ? parts.join(' ') : 'matching your criteria'
-  
-  return `I searched our current MLS database but couldn't find any active listings ${criteriaDesc}.
-
-**Our current inventory includes properties in:**
-- London, KY (prices from $3,200 - $83,920)
-- McKee, KY ($309,000)
-- Manchester, KY ($2,000 - $6,000)
-- Oneida, KY ($90,000 - $150,000)
-
-Would you like me to:
-- **Widen the search** to include nearby areas or adjust the price range?
-- **Show all listings** currently available?
-- **Contact The House Team** at (606) 224-3261 for properties coming soon?`
+  if (criteria.minBeds) parts.push(`${criteria.minBeds} bedroom`)
+  if (criteria.propertyType) parts.push(criteria.propertyType)
+  parts.push('homes for sale')
+  if (criteria.city) parts.push(criteria.city)
+  parts.push('KY')
+  parts.push('site:zillow.com OR site:realtor.com')
+  return parts.join(' ')
 }
 
 serve(async (req) => {
@@ -638,9 +622,15 @@ serve(async (req) => {
   }
 
   const startTime = Date.now()
+  
+  // Steps array to track what the bot is doing (for "thinking" feature)
+  const steps: string[] = []
 
   try {
     const { messages, sessionId }: RequestBody = await req.json()
+    const userQuery = messages[messages.length - 1]?.content || ''
+    
+    steps.push(`Understanding your request: "${userQuery.substring(0, 50)}${userQuery.length > 50 ? '...' : ''}"`)
 
     // Initialize Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
@@ -654,6 +644,8 @@ serve(async (req) => {
     let data: { choices?: Array<{ message?: { content?: string } }>, usage?: any }
     let usedModel: string
     let usedH200 = false
+
+    steps.push('Analyzing your request with AI...')
 
     // Try H200 first, fallback to OpenAI
     if (H200_ENABLED) {
@@ -674,25 +666,9 @@ serve(async (req) => {
     }
 
     const rawResponse = data.choices?.[0]?.message?.content || 'I apologize, but I was unable to generate a response. Please try again or call The House Team at (606) 224-3261.'
-    
-    console.log('Raw LLM response:', rawResponse.substring(0, 500))
 
     // Check if LLM requested a property search
-    let { criteria, cleanResponse: afterPropertyParse } = parsePropertySearch(rawResponse)
-    
-    // Get the last user message for fallback detection
-    const lastUserMessage = messages.length > 0 ? messages[messages.length - 1].content : ''
-    
-    // FALLBACK: If LLM didn't use PROPERTY_SEARCH tag but user asked about properties
-    let usedFallback = false
-    if (!criteria) {
-      const fallback = detectPropertyQuery(lastUserMessage)
-      if (fallback.isPropertyQuery) {
-        console.log('Using fallback property detection - LLM missed the tag')
-        criteria = fallback.criteria || {}
-        usedFallback = true
-      }
-    }
+    const { criteria, cleanResponse: afterPropertyParse } = parsePropertySearch(rawResponse)
 
     // Check if LLM requested a web search
     const { query: webSearchQuery, cleanResponse: afterWebParse } = parseWebSearch(afterPropertyParse)
@@ -701,42 +677,65 @@ serve(async (req) => {
     const { emailData, cleanResponse } = parseEmailRequest(afterWebParse)
 
     let properties: any[] = []
-    let searchWasAttempted = false
     if (criteria) {
-      searchWasAttempted = true
+      const searchDesc = criteria.city ? `in ${criteria.city}` : 'in Kentucky'
+      const bedsDesc = criteria.minBeds ? `${criteria.minBeds}+ bedroom ` : ''
+      steps.push(`Searching MLS database for ${bedsDesc}properties ${searchDesc}...`)
+      
       properties = await searchProperties(supabase, criteria)
-      console.log('Property search results:', { criteria, count: properties.length })
+      
+      if (properties.length > 0) {
+        steps.push(`Found ${properties.length} listing${properties.length > 1 ? 's' : ''} in The House Team's MLS.`)
+      } else {
+        steps.push(`No matching listings found in The House Team's MLS inventory.`)
+      }
     }
 
     let webSearchResults: string | undefined
-    if (webSearchQuery) {
-      const searchResult = await webSearch(webSearchQuery)
+    let webLinks: WebLink[] | undefined
+    
+    // Perform web search if requested OR if MLS returned no results (auto-fallback)
+    const shouldDoWebSearch = webSearchQuery || (criteria && properties.length === 0)
+    const actualWebQuery = webSearchQuery || (criteria ? buildFallbackQuery(criteria) : null)
+    
+    if (shouldDoWebSearch && actualWebQuery) {
+      steps.push(`Searching Zillow & Realtor.com for additional listings...`)
+      
+      const searchResult = await webSearch(actualWebQuery)
       if (searchResult.success) {
         webSearchResults = searchResult.results
+        webLinks = searchResult.links
+        const linkCount = webLinks?.length || 0
+        steps.push(`Found ${linkCount} result${linkCount !== 1 ? 's' : ''} from web search.`)
         console.log('Web search completed:', searchResult.source)
+      } else {
+        steps.push('Web search did not return results.')
       }
     }
 
     let emailSent = false
     if (emailData) {
+      steps.push('Sending your message to The House Team...')
       const emailResult = await sendEmail(emailData)
       emailSent = emailResult.success
+      if (emailSent) {
+        steps.push('Email sent successfully!')
+      }
       console.log('Email result:', emailResult)
     }
 
+    steps.push('Preparing your results...')
+
     const latencyMs = Date.now() - startTime
 
-    // Build final message
+    // Build final message - don't append raw web results, let UI handle webLinks
     let finalMessage = cleanResponse
     
-    // Handle "no results" case - override LLM's generic message with helpful info
-    if (searchWasAttempted && properties.length === 0) {
-      finalMessage = generateNoResultsMessage(criteria)
-    }
-    
-    // Combine message with web search results if available
-    if (webSearchResults) {
-      finalMessage = `${finalMessage}\n\n**Web Search Results:**\n${webSearchResults}`
+    // If MLS had no results but web search did, add a helpful note
+    if (criteria && properties.length === 0 && webLinks && webLinks.length > 0) {
+      const searchDesc = criteria.city || 'your area'
+      const bedsDesc = criteria.minBeds ? `${criteria.minBeds}-bedroom ` : ''
+      finalMessage = `The House Team doesn't currently have ${bedsDesc}listings in ${searchDesc} in our MLS, but I found some great options from other agents on Zillow and Realtor.com below. Would you like me to schedule a showing for any of these, or would you like to adjust your search criteria?`
     }
 
     return new Response(
@@ -744,8 +743,10 @@ serve(async (req) => {
         success: true,
         message: finalMessage,
         properties: properties,
+        webLinks: webLinks,
+        steps: steps,
         emailSent: emailSent,
-        webSearchPerformed: !!webSearchQuery,
+        webSearchPerformed: shouldDoWebSearch,
         usage: data.usage,
         model: usedModel,
         usedH200: usedH200,
@@ -762,7 +763,8 @@ serve(async (req) => {
       JSON.stringify({
         success: false,
         error: error.message || 'An error occurred processing your request',
-        message: 'I apologize, but I encountered an error. Please try again or contact The House Team directly at (606) 224-3261.'
+        message: 'I apologize, but I encountered an error. Please try again or contact The House Team directly at (606) 224-3261.',
+        steps: [...steps, 'An error occurred while processing your request.']
       }),
       {
         status: 500,

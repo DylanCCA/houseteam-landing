@@ -19,11 +19,19 @@ import {
   Sparkles
 } from 'lucide-react'
 
+interface WebLink {
+  title: string
+  link: string
+  snippet: string
+}
+
 interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
   properties?: Property[]
+  webLinks?: WebLink[]
+  steps?: string[]
   timestamp: Date
   model?: string
 }
@@ -216,6 +224,8 @@ export default function BotPage() {
         role: 'assistant',
         content: data.message,
         properties: data.properties?.length > 0 ? data.properties : undefined,
+        webLinks: data.webLinks?.length > 0 ? data.webLinks : undefined,
+        steps: data.steps?.length > 0 ? data.steps : undefined,
         timestamp: new Date(),
         model: data.model
       }
@@ -256,7 +266,7 @@ export default function BotPage() {
                 </div>
                 <div>
                   <h1 className="text-lg font-bold text-white">Kentucky Real Estate AI</h1>
-                  <p className="text-xs text-slate-400">Powered by H200 • The House Team</p>
+                  <p className="text-xs text-slate-400">Powered by CCA o1 • The House Team</p>
                 </div>
               </div>
             </div>
@@ -299,6 +309,23 @@ export default function BotPage() {
                     </div>
                   </div>
 
+                  {/* Thinking Steps */}
+                  {message.steps && message.steps.length > 0 && (
+                    <div className="mt-3 ml-10 bg-slate-800/50 rounded-lg p-3 border border-slate-600/50">
+                      <p className="text-xs text-amber-400 font-semibold mb-2 flex items-center gap-1">
+                        <Sparkles className="h-3 w-3" /> What I did:
+                      </p>
+                      <ul className="space-y-1">
+                        {message.steps.map((step, i) => (
+                          <li key={i} className="text-xs text-slate-400 flex items-start gap-2">
+                            <span className="text-amber-500/70 mt-0.5">•</span>
+                            <span>{step}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
                   {/* Property Cards */}
                   {message.properties && message.properties.length > 0 && (
                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 ml-10">
@@ -308,10 +335,38 @@ export default function BotPage() {
                     </div>
                   )}
 
+                  {/* Web Links from Zillow/Realtor.com */}
+                  {message.webLinks && message.webLinks.length > 0 && (
+                    <div className="mt-4 ml-10 bg-slate-800/50 rounded-lg p-4 border border-slate-600/50">
+                      <p className="text-sm text-amber-400 font-semibold mb-3 flex items-center gap-2">
+                        <MapPin className="h-4 w-4" /> More homes from Zillow & other sites:
+                      </p>
+                      <div className="space-y-3">
+                        {message.webLinks.slice(0, 6).map((link, i) => (
+                          <a
+                            key={i}
+                            href={link.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition group"
+                          >
+                            <p className="text-sm text-amber-400 group-hover:text-amber-300 font-medium line-clamp-1">
+                              {link.title}
+                            </p>
+                            {link.snippet && (
+                              <p className="text-xs text-slate-400 mt-1 line-clamp-2">{link.snippet}</p>
+                            )}
+                            <p className="text-xs text-slate-500 mt-1 truncate">{link.link}</p>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className={`flex items-center gap-2 text-xs text-slate-500 mt-1 ${message.role === 'user' ? 'justify-end mr-10' : 'ml-10'}`}>
                     <span>{message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     {message.model && (
-                      <span className="text-amber-500/70">• {message.model.includes('120b') ? 'H200' : 'GPT-4o'}</span>
+                      <span className="text-amber-500/70">• {message.model.includes('120b') ? 'H200' : 'CCA o1'}</span>
                     )}
                   </div>
                 </div>
