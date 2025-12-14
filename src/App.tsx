@@ -411,7 +411,7 @@ function App() {
             ))}
           </div>
           <div className="text-center mt-12">
-            <Button size="lg" className="bg-blue-600 hover:bg-blue-700" onClick={() => window.open('https://www.century21.com/real-estate-agent/profile/tabitha-house-P117953697', '_blank')}>View All 23 Listings<Users className="h-5 w-5 ml-2" /></Button>
+            <Button size="lg" className="bg-blue-600 hover:bg-blue-700" onClick={() => window.open('https://www.century21.com/real-estate-agent/profile/tabitha-house-P106668633', '_blank')}>View All 23 Listings<Users className="h-5 w-5 ml-2" /></Button>
             <p className="text-gray-600 mt-4">Contact us today to schedule a showing</p>
           </div>
         </div>

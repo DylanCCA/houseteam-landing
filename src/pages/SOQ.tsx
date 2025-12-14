@@ -203,7 +203,7 @@ const SOQPage = () => {
         {/* Background image */}
         <div className="absolute inset-0">
           <img
-            src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=2075&q=80"
+            src="/images/hero-luxury-home.jpg"
             alt="Luxury home"
             className="w-full h-full object-cover opacity-40"
           />
@@ -259,7 +259,7 @@ const SOQPage = () => {
               <Button 
                 size="lg"
                 className="bg-primary text-primary-foreground hover:shadow-[0_0_30px_hsl(var(--primary)/0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
-                onClick={() => window.open('https://www.century21advantage.com/london/', '_blank')}
+                onClick={() => window.open('https://www.century21.com/real-estate-agent/profile/tabitha-house-P106668633', '_blank')}
               >
                 View My Portfolio
                 <ArrowRight className="ml-2 h-4 w-4" />
