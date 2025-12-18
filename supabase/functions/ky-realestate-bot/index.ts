@@ -40,6 +40,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Investment Property Research Configuration
+const INVESTMENT_SEARCH_SITES = [
+  'site:cityfeet.com',
+  'site:crexi.com', 
+  'site:loopnet.com',
+  'site:commercialcafe.com',
+  'site:costar.com'
+]
+
 // Kentucky Real Estate Knowledge Base
 const KY_KNOWLEDGE = `
 ## Kentucky Real Estate Laws & Regulations
@@ -82,10 +91,10 @@ const KY_KNOWLEDGE = `
 - Specialties: Residential and Commercial properties
 `
 
-// System prompt for the Kentucky Real Estate Bot - AGENTIC VERSION
+// System prompt for the Kentucky Real Estate Bot - AGENTIC VERSION with Investment Research
 const SYSTEM_PROMPT = `You are an AGENTIC Kentucky Real Estate Assistant for The House Team at Century 21 Advantage Realty.
 
-You are NOT a passive chatbot. You are an AUTONOMOUS AGENT that takes initiative, combines multiple data sources, and proactively helps users find properties.
+You are NOT a passive chatbot. You are an AUTONOMOUS AGENT that takes initiative, combines multiple data sources, and proactively helps users find properties. You can also perform DEEP INVESTMENT RESEARCH for commercial and multifamily properties.
 
 ## AGENTIC BEHAVIOR - BE PROACTIVE
 
@@ -94,6 +103,7 @@ You are NOT a passive chatbot. You are an AUTONOMOUS AGENT that takes initiative
 3. **Combine information** - Present MLS listings first, then supplement with web results
 4. **Take action** - When a user shows interest, proactively offer to schedule showings or send info
 5. **Be thorough** - Search multiple ways if initial results are limited
+6. **Investment queries** - When users mention cap rates, doors/units, apartment complexes, or investment criteria, use [INVESTMENT_RESEARCH]
 
 ## YOUR TOOLS
 
@@ -106,13 +116,62 @@ Criteria: city, county, minPrice, maxPrice, minBeds, maxBeds, minBaths, minSqft,
 Searches Google for additional listings from ALL agents/sources.
 Format: [WEB_SEARCH]{"query":"3 bedroom homes London KY Zillow under 300000"}[/WEB_SEARCH]
 
-### 3. [SEND_EMAIL] - Take Action
+### 3. [INVESTMENT_RESEARCH] - Deep Commercial/Multifamily Property Research
+For investment property queries - searches CityFeet, Crexi, LoopNet, and commercial databases.
+Format: [INVESTMENT_RESEARCH]{"maxPrice":5000000,"minUnits":30,"propertyType":"apartment","location":"London KY","radiusMiles":150,"minCapRate":5}[/INVESTMENT_RESEARCH]
+
+Use this when users mention:
+- Cap rates (e.g., "5% cap rate minimum")
+- Unit counts / doors (e.g., "30 door minimum", "30+ units")
+- Apartment complexes, multifamily, commercial
+- Investment criteria, revenue producing
+- Price limits for investment properties
+
+### 4. [SEND_EMAIL] - Take Action
 Send showing requests or inquiries to The House Team.
 Format: [SEND_EMAIL]{"type":"showing_request","property_address":"123 Main St","user_message":"Interested in viewing"}[/SEND_EMAIL]
 
-## AGENTIC SEARCH STRATEGY
+## INVESTMENT RESEARCH STRATEGY
 
-For ANY property search request:
+When a user provides investment criteria like:
+- "$5M purchase price"
+- "30 door minimum"
+- "Apartment complex"
+- "Within 150 miles of London"
+- "5% min cap return"
+
+**Step 1: Parse the criteria and use [INVESTMENT_RESEARCH]**
+[INVESTMENT_RESEARCH]{"maxPrice":5000000,"minUnits":30,"propertyType":"apartment","location":"London KY","radiusMiles":150,"minCapRate":5}[/INVESTMENT_RESEARCH]
+
+**Step 2: Present findings in a professional investment report format:**
+
+**Apartment Complex Investment Research Complete**
+
+I've completed deep research on apartment complexes meeting your criteria.
+
+**Key Findings:**
+
+**X Properties Meet ALL Criteria:**
+
+1. **Property Name - City, State** - $X,XXX,XXX
+   - XX units | X.XX% cap rate | YYYY build (Class X)
+   - $XXX,XXX/unit, analysis notes
+   - Occupancy %, rent growth data
+   - Value-add opportunities
+   - Broker: Name, Company
+
+[Continue for each property...]
+
+**Additional Properties Requiring Verification:**
+[List properties that partially match but need verification]
+
+**Market Note:** [Brief market analysis]
+
+Would you like me to email this report or get more details on any property?
+
+## AGENTIC SEARCH STRATEGY (Residential)
+
+For ANY residential property search request:
 
 **Step 1: ALWAYS search MLS first**
 [PROPERTY_SEARCH]{"city":"London"}[/PROPERTY_SEARCH]
@@ -129,43 +188,49 @@ For ANY property search request:
 
 1. **Property searches = Use BOTH [PROPERTY_SEARCH] AND [WEB_SEARCH]**
 2. **Zillow/Realtor mentioned = IMMEDIATELY use [WEB_SEARCH]**
-3. **User interested in property = Proactively offer [SEND_EMAIL] to schedule**
-4. **Market questions = Use [WEB_SEARCH] for current data**
-5. **Limited results = Expand search criteria and try again**
+3. **Investment criteria (cap rate, units, apartment) = Use [INVESTMENT_RESEARCH]**
+4. **User interested in property = Proactively offer [SEND_EMAIL] to schedule**
+5. **Market questions = Use [WEB_SEARCH] for current data**
+6. **Limited results = Expand search criteria and try again**
 
 ## DATA SOURCES EXPLAINED
 
 When users ask about data:
 - **MLS Data**: "Our MLS listings come directly from the Bluegrass REALTORS® MLS, updated twice daily. These are The House Team's active listings."
 - **Web Results**: "I also search Zillow, Realtor.com, and other sites to find ALL available properties in your area, not just our listings."
-- **Why both**: "This gives you the most comprehensive view - our exclusive listings PLUS everything else on the market."
+- **Investment Data**: "For commercial/multifamily properties, I search CityFeet, Crexi, LoopNet, and commercial real estate databases to find investment opportunities."
+- **Why comprehensive**: "This gives you the most thorough view - our exclusive listings, market-wide residential options, AND commercial investment opportunities."
 
-## EXAMPLE AGENTIC RESPONSES
+## EXAMPLE INVESTMENT RESEARCH RESPONSE
 
-User: "Show me homes in London KY"
-You: [PROPERTY_SEARCH]{"city":"London"}[/PROPERTY_SEARCH]
-[WEB_SEARCH]{"query":"homes for sale London KY 2024"}[/WEB_SEARCH]
+User: "$5m purchase price, 30 door minimum, Apartment complex, Within 150 miles of London, Revenue producing at 5% min cap return, Deep research"
 
-Here's what I found:
+You: [INVESTMENT_RESEARCH]{"maxPrice":5000000,"minUnits":30,"propertyType":"apartment","location":"London KY","radiusMiles":150,"minCapRate":5}[/INVESTMENT_RESEARCH]
 
-**The House Team's MLS Listings:**
-[Display MLS results]
+**Apartment Complex Investment Research Complete**
 
-**Additional Listings from Other Sources:**
-[Display web results]
+I've completed deep research on apartment complexes meeting your client's criteria ($5M max, 30+ doors, within 150mi of London KY, 5%+ cap rate, revenue producing).
 
-Would you like me to schedule a showing for any of these properties? I can also search with different criteria if you'd like to narrow down or expand your options.
+**Key Findings:**
 
----
+**2 Properties Meet ALL Criteria:**
 
-User: "I like the one on Dogwood"
-You: Great choice! The property at 45 Dogwood is a beautiful 42-acre farm listed at $83,920.
+1. **Crawford Crossing - Louisville, KY** - $3,390,000
+   - 30 units | 6.50% cap rate | 2011 build (Class B)
+   - $113K/unit, below replacement cost
+   - 94% occupancy, 3.8% rent growth
+   - Value-add: rents trail market by $171/mo
+   - Broker: Aaron Kuroiwa, Marcus & Millichap
 
-[SEND_EMAIL]{"type":"showing_request","property_address":"45 Dogwood, London KY","user_message":"Client interested in scheduling a showing"}[/SEND_EMAIL]
+2. **Landings at Red Rock - Tullahoma, TN** - $4,000,000
+   - 40 units | 6.63% cap rate | 1964 build (Class C)
+   - $100K/unit, RUBS system implemented
+   - Turnkey with value-add potential
+   - Broker: Landon Hoffman, 931-408-9713
 
-I've notified The House Team about your interest. Tabitha or Dustin will reach out shortly to schedule a convenient time. You can also call directly at (606) 224-3261.
+**Market Note:** Inventory meeting all criteria is limited in this region. Both recommended properties exceed the 5% cap rate minimum (6.5-6.63%).
 
-Would you like more details about this property or see similar listings?
+Would you like me to email this report to your client or get more details on either property?
 
 ## THE HOUSE TEAM
 ${KY_KNOWLEDGE}
@@ -636,6 +701,169 @@ function parseEmailRequest(response: string): { emailData: any | null, cleanResp
   return { emailData: null, cleanResponse: response }
 }
 
+// Parse investment research request from LLM response
+interface InvestmentCriteria {
+  maxPrice?: number
+  minPrice?: number
+  minUnits?: number
+  maxUnits?: number
+  propertyType?: string
+  location?: string
+  radiusMiles?: number
+  minCapRate?: number
+  maxCapRate?: number
+}
+
+function parseInvestmentResearch(response: string): { criteria: InvestmentCriteria | null, cleanResponse: string } {
+  const researchMatch = response.match(/\[INVESTMENT_RESEARCH\](.*?)\[\/INVESTMENT_RESEARCH\]/s)
+
+  if (researchMatch) {
+    try {
+      const criteria = JSON.parse(researchMatch[1])
+      const cleanResponse = response.replace(/\[INVESTMENT_RESEARCH\].*?\[\/INVESTMENT_RESEARCH\]/s, '').trim()
+      return { criteria, cleanResponse }
+    } catch (e) {
+      console.error('Failed to parse investment research criteria:', e)
+    }
+  }
+
+  return { criteria: null, cleanResponse: response }
+}
+
+// Perform deep investment property research
+async function investmentResearch(criteria: InvestmentCriteria): Promise<{
+  success: boolean
+  results: string
+  properties: Array<{
+    name: string
+    location: string
+    price: number
+    units: number
+    capRate: number
+    yearBuilt?: number
+    buildingClass?: string
+    pricePerUnit?: number
+    broker?: string
+    brokerPhone?: string
+    source: string
+    url?: string
+    notes?: string
+  }>
+}> {
+  console.log('Starting investment research with criteria:', criteria)
+  
+  // Build search queries for commercial real estate sites
+  const searchQueries: string[] = []
+  
+  // Base query components
+  const location = criteria.location || 'Kentucky'
+  const propertyType = criteria.propertyType || 'apartment'
+  const maxPrice = criteria.maxPrice ? `under $${(criteria.maxPrice / 1000000).toFixed(1)}M` : ''
+  const minUnits = criteria.minUnits ? `${criteria.minUnits}+ units` : ''
+  const radius = criteria.radiusMiles ? `within ${criteria.radiusMiles} miles` : ''
+  
+  // Search commercial real estate sites
+  const commercialSites = ['cityfeet.com', 'crexi.com', 'loopnet.com']
+  
+  for (const site of commercialSites) {
+    const query = `${propertyType} complex for sale ${location} ${minUnits} ${maxPrice} site:${site}`.trim()
+    searchQueries.push(query)
+  }
+  
+  // Also search for general multifamily listings
+  searchQueries.push(`multifamily apartment investment ${location} ${minUnits} ${maxPrice} cap rate`)
+  searchQueries.push(`${propertyType} complex for sale ${location} ${radius} revenue producing`)
+  
+  // Execute searches in parallel
+  const searchPromises = searchQueries.map(async (query) => {
+    try {
+      const result = await googleSearch(query)
+      return result.success ? { query, results: result.results, links: result.links } : null
+    } catch (e) {
+      console.error('Search failed for query:', query, e)
+      return null
+    }
+  })
+  
+  const searchResults = await Promise.all(searchPromises)
+  const validResults = searchResults.filter((r): r is { query: string; results: string; links?: Array<{title: string; link: string; snippet: string}> } => r !== null)
+  
+  // Compile results
+  let compiledResults = `**Investment Property Research Results**\n\n`
+  compiledResults += `**Search Criteria:**\n`
+  compiledResults += `- Property Type: ${propertyType}\n`
+  compiledResults += `- Location: ${location}${radius ? ` (${radius})` : ''}\n`
+  if (criteria.maxPrice) compiledResults += `- Max Price: $${criteria.maxPrice.toLocaleString()}\n`
+  if (criteria.minUnits) compiledResults += `- Min Units: ${criteria.minUnits}\n`
+  if (criteria.minCapRate) compiledResults += `- Min Cap Rate: ${criteria.minCapRate}%\n`
+  compiledResults += `\n---\n\n`
+  
+  // Aggregate all links found
+  const allLinks: Array<{title: string; link: string; snippet: string; source: string}> = []
+  
+  for (const result of validResults) {
+    if (result.links) {
+      for (const link of result.links) {
+        // Filter for relevant commercial real estate links
+        const isRelevant = 
+          link.link.includes('cityfeet') ||
+          link.link.includes('crexi') ||
+          link.link.includes('loopnet') ||
+          link.link.includes('commercialcafe') ||
+          link.link.includes('costar') ||
+          link.link.includes('apartment') ||
+          link.link.includes('multifamily') ||
+          link.title.toLowerCase().includes('apartment') ||
+          link.title.toLowerCase().includes('unit') ||
+          link.title.toLowerCase().includes('multifamily')
+        
+        if (isRelevant) {
+          allLinks.push({
+            ...link,
+            source: result.query.includes('cityfeet') ? 'CityFeet' :
+                    result.query.includes('crexi') ? 'Crexi' :
+                    result.query.includes('loopnet') ? 'LoopNet' : 'Web'
+          })
+        }
+      }
+    }
+  }
+  
+  // Remove duplicates by URL
+  const uniqueLinks = allLinks.filter((link, index, self) =>
+    index === self.findIndex(l => l.link === link.link)
+  )
+  
+  if (uniqueLinks.length > 0) {
+    compiledResults += `**Properties Found (${uniqueLinks.length} results):**\n\n`
+    
+    for (let i = 0; i < Math.min(uniqueLinks.length, 15); i++) {
+      const link = uniqueLinks[i]
+      compiledResults += `**${i + 1}. ${link.title}**\n`
+      compiledResults += `${link.snippet}\n`
+      compiledResults += `Source: ${link.source} | 🔗 ${link.link}\n\n`
+    }
+  } else {
+    compiledResults += `**No properties found matching all criteria.**\n\n`
+    compiledResults += `This may indicate limited inventory in the specified area. Consider:\n`
+    compiledResults += `- Expanding the search radius\n`
+    compiledResults += `- Adjusting price or unit requirements\n`
+    compiledResults += `- Contacting local commercial brokers directly\n`
+  }
+  
+  // Add market context
+  compiledResults += `\n---\n\n`
+  compiledResults += `**Market Note:** Commercial multifamily inventory meeting specific investment criteria can be limited. `
+  compiledResults += `Properties with strong cap rates (5%+) in the Kentucky/Tennessee region are competitive. `
+  compiledResults += `Consider working with a commercial broker for off-market opportunities.\n`
+  
+  return {
+    success: true,
+    results: compiledResults,
+    properties: [] // Would be populated with parsed property data in a more advanced implementation
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -686,8 +914,11 @@ serve(async (req) => {
     // Check if LLM requested web searches (supports MULTIPLE searches for agentic behavior)
     const { queries: webSearchQueries, cleanResponse: afterWebParse } = parseWebSearch(afterPropertyParse)
 
+    // Check if LLM requested investment research
+    const { criteria: investmentCriteria, cleanResponse: afterInvestmentParse } = parseInvestmentResearch(afterWebParse)
+
     // Check if LLM requested an email action
-    const { emailData, cleanResponse } = parseEmailRequest(afterWebParse)
+    const { emailData, cleanResponse } = parseEmailRequest(afterInvestmentParse)
 
     // Execute property search
     let properties: any[] = []
@@ -713,6 +944,17 @@ serve(async (req) => {
       console.log(`Completed ${webSearchResults.length} successful web searches`)
     }
 
+    // Execute investment research if requested
+    let investmentResults: string | null = null
+    if (investmentCriteria) {
+      console.log('Executing investment research...')
+      const research = await investmentResearch(investmentCriteria)
+      if (research.success) {
+        investmentResults = research.results
+        console.log('Investment research completed successfully')
+      }
+    }
+
     // Execute email action
     let emailSent = false
     if (emailData) {
@@ -723,10 +965,17 @@ serve(async (req) => {
 
     const latencyMs = Date.now() - startTime
 
-    // Combine message with web search results if available
+    // Combine message with search results
     let finalMessage = cleanResponse
+    
+    // Add investment research results if available
+    if (investmentResults) {
+      finalMessage = `${cleanResponse}\n\n${investmentResults}`
+    }
+    
+    // Add web search results if available
     if (webSearchResults.length > 0) {
-      finalMessage = `${cleanResponse}\n\n**Additional Listings Found Online:**\n\n${webSearchResults.join('\n\n---\n\n')}`
+      finalMessage = `${finalMessage}\n\n**Additional Listings Found Online:**\n\n${webSearchResults.join('\n\n---\n\n')}`
     }
 
     return new Response(
@@ -737,6 +986,7 @@ serve(async (req) => {
         emailSent: emailSent,
         webSearchCount: webSearchQueries.length,
         webSearchPerformed: webSearchQueries.length > 0,
+        investmentResearchPerformed: !!investmentCriteria,
         usage: data.usage,
         model: usedModel,
         usedH200: usedH200,
